@@ -5,9 +5,10 @@
 <meta name="theme-color" content="#0E0702"><meta name="color-scheme" content="dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
-<title>AncestralMind — Family Edition</title>
+<meta name="apple-mobile-web-app-title" content="Family Tree">
+<link rel="manifest" href="#" id="pwaManifest">
+<title>Family Tree — Living Heritage</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 :root{
   --bd:#0E0702;--bc:#1C0D06;--bp:#261208;--bm:#160A04;
@@ -40,6 +41,8 @@ body{background:#0E0702;background-color:#0E0702;color:#FEFAF2;color:var(--cr);f
 .tb-badge{background:rgba(64,238,228,0.12);border:1px solid rgba(64,238,228,0.40);color:var(--tll);padding:5px 12px;border-radius:20px;font-size:10px;font-family:var(--fd);letter-spacing:1px;font-weight:600}
 
 /* SCREENS */
+#gridView{display:none}
+#obView{display:block}
 .scr{display:none;padding:0 0 100px;background:#0E0702;background:var(--bd)}.scr.act{display:block}
 
 /* HOME / ONBOARDING */
@@ -268,19 +271,19 @@ footer{text-align:center;padding:28px 20px 36px;border-top:1px solid var(--br);m
 <!-- TOPBAR -->
 <div class="tb">
   <div class="lw" onclick="goHome()">
-    <div class="li2">🕯️</div>
-    <div><div class="lt">AncestralMind</div><div class="ls">Family Edition</div></div>
+    <div class="li2">🌳</div>
+    <div><div class="lt">Family Tree</div><div class="ls">Living Heritage</div></div>
   </div>
   <div class="tb-badge">✓ Free</div>
 </div>
 
 <!-- HOME -->
 <div class="scr act" id="homeScr">
-  <div id="obView" style="display:none">
+  <div id="obView">
     <div class="ob-hero">
       <span class="ob-flame">🕯️</span>
-      <div class="ob-title">AncestralMind</div>
-      <div class="ob-sub">Preserve your family's wisdom forever. Build your tree, record their stories, keep their memory alive.</div>
+      <div class="ob-title">Family Tree</div>
+      <div class="ob-sub">Preserve your family's heritage. Build your tree, record their wisdom, keep their memory alive — forever.</div>
     </div>
     <div class="ob-steps">
       <div class="ob-step"><div class="ob-step-num">1</div><div><div class="ob-step-title">Add Family Members</div><div class="ob-step-desc">Create profiles with name, photo, years, generation and living status.</div></div></div>
@@ -291,13 +294,13 @@ footer{text-align:center;padding:28px 20px 36px;border-top:1px solid var(--br);m
     <div class="ob-actions">
       <button class="ob-cta" onclick="openAddAncMo()">🕯️ Add Your First Member</button>
       <div class="ob-divider"><span>or explore first</span></div>
-      <button class="ob-sample" onclick="loadSample()">👁 Load a Sample Family</button>
+      <button class="ob-sample" onclick="startTour()">🌳 Preview All Features — Quick Tour</button>
     </div>
   </div>
 
-  <div id="gridView" style="display:none">
+  <div id="gridView">
     <div class="hero">
-      <div class="ht">Your Family</div>
+      <div class="ht">Your Family Tree</div>
       <div class="hs">Preserve the wisdom of those who came before. Let their voices guide you still.</div>
       <div class="do"><span>✦</span></div>
     </div>
@@ -482,26 +485,41 @@ footer{text-align:center;padding:28px 20px 36px;border-top:1px solid var(--br);m
   <div style="font-family:var(--fh);font-size:18px;color:var(--gl);font-weight:600;margin-bottom:14px;letter-spacing:0.5px">Kandregula Krishnamurthy</div>
   <div style="display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px;color:var(--cd)">
     <span>AncestralMind</span>
-    <span style="display:inline-flex;align-items:center;gap:5px;background:rgba(64,238,228,0.12);border:1px solid rgba(64,238,228,0.4);border-radius:20px;padding:3px 10px;color:var(--tll);font-family:var(--fd);font-size:10px;letter-spacing:1px;font-weight:600">✓ Free Edition</span>
+    <span style="display:inline-flex;align-items:center;gap:5px;background:rgba(64,238,228,0.12);border:1px solid rgba(64,238,228,0.4);border-radius:20px;padding:3px 10px;color:var(--tll);font-family:var(--fd);font-size:10px;letter-spacing:1px;font-weight:600">🌳 Family Tree App</span>
   </div>
   <div style="margin-top:12px;font-size:11px;color:var(--cd);letter-spacing:1px;font-family:var(--fd)">Krishnamurthy Kandregula Innovation Lab</div>
 </footer>
 
 <div class="lb" id="lb"><button class="lbc" onclick="closeLB()">✕</button><img id="lbI" src="" alt=""></div>
+<!-- TOUR OVERLAY -->
+<div id="tourOverlay" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.6);align-items:flex-end;justify-content:center">
+  <div id="tourCard" style="background:#1C0D06;border:1px solid var(--br);border-radius:20px 20px 0 0;padding:24px 20px 40px;width:100%;max-width:600px;text-align:center;animation:slideUp 0.3s ease"></div>
+</div>
+<!-- DEMO BAR -->
+<div id="demoBar" style="display:none;position:fixed;top:60px;left:0;right:0;z-index:150;background:rgba(26,106,106,0.92);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);padding:8px 16px;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(64,238,228,0.4)">
+  <div style="font-family:var(--fd);font-size:11px;letter-spacing:1px;color:white;display:flex;align-items:center;gap:8px">🌳 DEMO MODE — Sample family loaded</div>
+  <button onclick="exitTour()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:20px;color:white;font-family:var(--fd);font-size:10px;padding:5px 12px;cursor:pointer">&#x2715; Exit Demo</button>
+</div>
 <div class="toast" id="toast"></div>
 <canvas id="cvs"></canvas><canvas id="cvs2"></canvas>
 
 <script>
 // ── STATE ──
-const S={ancestors:[],curId:null,curTab:'w',ancPh64:null,wisPh64:null,wisPhTp:null,
+const S={ancestors:[],curId:null,curTab:'w',isSample:false,ancPh64:null,wisPh64:null,wisPhTp:null,
   enh:{origUrl:null,enhUrl:null,isBlurry:false,ctx:'anc'}};
 const CVS=document.getElementById('cvs'),CVS2=document.getElementById('cvs2');
 const CX=CVS.getContext('2d'),CX2=CVS2.getContext('2d');
 
-function init(){loadS();regSW();renderHome();initSlider();}
-function loadS(){try{const s=localStorage.getItem('amf1');if(s)Object.assign(S,JSON.parse(s));}catch(e){}}
-function saveS(){localStorage.setItem('amf1',JSON.stringify({ancestors:S.ancestors}));}
-function regSW(){if(!('serviceWorker'in navigator))return;navigator.serviceWorker.register(URL.createObjectURL(new Blob([`self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('fetch',()=>{});`],{type:'application/javascript'})));}
+function init(){
+  try{loadS();}catch(e){}
+  try{document.getElementById('homeScr').classList.add('act');document.getElementById('detScr').classList.remove('act');document.getElementById('treeScr').classList.remove('act');}catch(e){}
+  try{renderHome();}catch(e){console.warn('renderHome:',e);}
+  try{initSlider();}catch(e){}
+  try{regSW();}catch(e){}
+  try{injectPWA();}catch(e){}
+}
+function loadS(){try{const s=localStorage.getItem('ftree1');if(s){const d=JSON.parse(s);if(d&&Array.isArray(d.ancestors))Object.assign(S,d);}}catch(e){}}
+function saveS(){localStorage.setItem('ftree1',JSON.stringify({ancestors:S.ancestors,isSample:S.isSample||false}));}function regSW(){try{if(!('serviceWorker'in navigator))return;if(location.protocol==='file:')return;const sw=`self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('fetch',()=>{});`;navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'}))).catch(()=>{});}catch(e){}}
 
 // ── CANVAS PHOTO ENGINE ──
 function loadCanvas(url){return new Promise(res=>{const img=new Image();img.onload=()=>{let w=img.width,h=img.height;const M=900;if(w>M){h=Math.round(h*M/w);w=M;}if(h>M){w=Math.round(w*M/h);h=M;}CVS.width=w;CVS.height=h;CX.drawImage(img,0,0,w,h);res({w,h});};img.src=url;});}
@@ -583,24 +601,41 @@ function renderTree(){
 
 // ── RENDER HOME ──
 function renderHome(){
-  const ob=document.getElementById('obView'),gv=document.getElementById('gridView');
-  document.getElementById('appFooter').style.display='block';
-  if(!S.ancestors.length){ob.style.display='block';gv.style.display='none';return;}
+  const ob=document.getElementById('obView');
+  const gv=document.getElementById('gridView');
+  const ft=document.getElementById('appFooter');
+  if(ft)ft.style.display='block';
+  if(!ob||!gv)return;
+  if(!S.ancestors||!S.ancestors.length){
+    ob.style.display='block';gv.style.display='none';return;
+  }
   ob.style.display='none';gv.style.display='block';
-  const g=document.getElementById('ancGrid');let h='';
-  S.ancestors.forEach((a,i)=>{
+  const existingHint=document.getElementById('homeSmplHint');
+  if(S.isSample&&!existingHint){
+    const hint=document.createElement('div');
+    hint.id='homeSmplHint';
+    hint.style.cssText='margin:0 16px 12px;padding:12px 14px;background:rgba(64,238,228,0.08);border:1px solid rgba(64,238,228,0.35);border-radius:10px;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--cs)';
+    hint.innerHTML='<span style="font-size:20px">👋</span><div><strong style="color:var(--tll);font-family:var(--fd);font-size:11px;letter-spacing:1px;display:block;margin-bottom:3px">SAMPLE DATA LOADED</strong>Add your real family, then clear the sample when done.</div>';
+    const grid=document.getElementById('ancGrid');
+    if(grid&&grid.parentNode)grid.parentNode.insertBefore(hint,grid);
+  }else if(!S.isSample&&existingHint){existingHint.remove();}
+  const g=document.getElementById('ancGrid');
+  if(!g)return;
+  let h2='';
+  S.ancestors.forEach(function(a,i){
     const wc=(a.wisdomEntries||[]).length,lv=a.status==='living';
     const sb=lv?'<span class="status-living">Living</span>':'<span class="status-expired"></span>';
-    h+=`<div class="ac2 ${lv?'living':''}" onclick="openAnc('${a.id}')" style="animation-delay:${i*.07}s">
-      ${wc?`<div class="abd">${wc} 📜</div>`:''}
-      <div class="aav">${a.photo?`<img src="${a.photo}">`:`<div class="ini">${ini(a.name)}</div>`}</div>
-      <div class="an">${a.name}</div><div class="ar">${a.relation}</div>
-      <div class="ay">${fmtY(a.birthYear,a.deathYear)}</div>
-      <div style="text-align:center;margin-top:6px">${sb}</div>
-    </div>`;
+    h2+='<div class="ac2 '+(lv?'living':'')+'" data-id="'+a.id+'" onclick="openAnc(this.dataset.id)" style="animation-delay:'+(i*.07)+'s">'
+      +(wc?'<div class="abd">'+wc+' &#x1F4DC;</div>':'')
+      +'<div class="aav">'+(a.photo?'<img src="'+a.photo+'">':`<div class="ini">${ini(a.name)}</div>`)+'</div>'
+      +'<div class="an">'+a.name+'</div>'
+      +'<div class="ar">'+a.relation+'</div>'
+      +'<div class="ay">'+fmtY(a.birthYear,a.deathYear)+'</div>'
+      +'<div style="text-align:center;margin-top:6px">'+sb+'</div>'
+      +'</div>';
   });
-  h+=`<div class="aac" onclick="openAddAncMo()"><div class="pl">+</div><span>Add Member</span><span class="bfree" style="margin-top:6px">FREE</span></div>`;
-  g.innerHTML=h;
+  h2+='<div class="aac" onclick="openAddAncMo()"><div class="pl">+</div><span>Add Member</span><span class="bfree" style="margin-top:6px">FREE</span></div>';
+  g.innerHTML=h2;
 }
 
 // ── RENDER DETAIL ──
@@ -686,20 +721,101 @@ async function exportPDF(aId){
 function showPdfPg(t,s,p){document.getElementById('pdfOvT').textContent=t;document.getElementById('pdfOvS').textContent=s;document.getElementById('pdfBarF').style.width=p+'%';document.getElementById('pdfOv').classList.add('show');}
 function hidePdfPg(){document.getElementById('pdfOv').classList.remove('show');}
 
-// ── SAMPLE DATA ──
+// ── SAMPLE DATA & TOUR ──
+let tourDemoLoaded=false;
+
 function loadSample(){
   if(S.ancestors.length){showToast('Clear existing data first','error');return;}
-  const pid=gid(),mid=gid(),fid=gid();
-  S.ancestors=[
-    {id:pid,name:'Venkata Rao Kandregula',relation:'Great-Grandfather',language:'Telugu',birthYear:'1895',deathYear:'1968',status:'expired',generation:1,parentId:null,description:'A principled patriarch. Rose before sunrise every day. Spoke only in Telugu proverbs.',photo:null,wisdomEntries:[{id:gid(),type:'Saying',text:'నీరు తక్కువగా ఉన్నప్పుడు — When water is scarce, the field trusts the rain will come. Worry is the drought you bring upon yourself.',timestamp:Date.now()-86400000*40}]},
-    {id:mid,name:'Subbamma Kandregula',relation:'Great-Grandmother',language:'Telugu',birthYear:'1900',deathYear:'1975',status:'expired',generation:1,parentId:null,description:'The matriarch. Known for her cooking and herbal wisdom.',photo:null,wisdomEntries:[{id:gid(),type:'Belief',text:'The kitchen is the soul of the house. Cook only when your heart is calm — food carries the mood of the one who made it.',timestamp:Date.now()-86400000*35}]},
-    {id:fid,name:'Krishnamurthy Rao',relation:'Grandfather (Thatha)',language:'Telugu',birthYear:'1928',deathYear:'1992',status:'expired',generation:2,parentId:pid,description:'Farmer and teacher. Loved Carnatic music and jasmine flowers.',photo:null,wisdomEntries:[{id:gid(),type:'Story',text:'During the drought of 1953, when other farmers abandoned their fields, Thatha stayed. He mortgaged his gold ring to buy seeds. "The land fed my father. I will not leave it when it is hungry."',timestamp:Date.now()-86400000*20},{id:gid(),type:'Life Lesson',text:'Never borrow money to celebrate. Celebrate when the harvest comes in, not when it is still in the ground.',timestamp:Date.now()-86400000*15}]},
-    {id:gid(),name:'Your Father',relation:'Father (Nanna)',language:'Telugu',birthYear:'1958',deathYear:null,status:'living',generation:3,parentId:fid,description:'Add your own story here.',photo:null,wisdomEntries:[]},
-  ];
-  saveS();renderHome();showToast('Sample family loaded ✦','success');setTimeout(openTree,400);
+  insertSampleData();
+  saveS();renderHome();showToast('Sample family loaded!','success');
+  setTimeout(openTree,400);
 }
 
-// ── ANCESTOR CRUD ──
+function insertSampleData(){
+  const pid=gid(),fid=gid();
+  S.ancestors=[
+    {id:pid,name:'Venkata Rao Kandregula',relation:'Great-Grandfather',language:'Telugu',birthYear:'1895',deathYear:'1968',status:'expired',generation:1,parentId:null,description:'A principled patriarch who rose before sunrise every day.',photo:null,wisdomEntries:[
+      {id:gid(),type:'Saying',text:'When water is scarce, the field trusts the rain will come. Worry is the drought you bring upon yourself.',timestamp:Date.now()-86400000*40},
+      {id:gid(),type:'Life Lesson',text:'Never borrow money to celebrate. Celebrate when the harvest comes in, not when it is still in the ground.',timestamp:Date.now()-86400000*20}
+    ]},
+    {id:gid(),name:'Subbamma Kandregula',relation:'Great-Grandmother',language:'Telugu',birthYear:'1900',deathYear:'1975',status:'expired',generation:1,parentId:null,description:'The matriarch. Known for her cooking and herbal wisdom.',photo:null,wisdomEntries:[
+      {id:gid(),type:'Belief',text:'The kitchen is the soul of the house. Cook only when your heart is calm.',timestamp:Date.now()-86400000*30}
+    ]},
+    {id:fid,name:'Krishnamurthy Rao',relation:'Grandfather (Thatha)',language:'Telugu',birthYear:'1928',deathYear:'1992',status:'expired',generation:2,parentId:pid,description:'Farmer and teacher. Loved Carnatic music and jasmine flowers.',photo:null,wisdomEntries:[
+      {id:gid(),type:'Story',text:'During the drought of 1953, when others left, he stayed. He mortgaged his gold ring to buy seeds. The land fed my father — I will not leave it when it is hungry.',timestamp:Date.now()-86400000*15},
+      {id:gid(),type:'Memory',text:'Every Sankranti morning he would draw the first kolam himself. "The first welcome of the new year should come from the man of the house."',timestamp:Date.now()-86400000*5}
+    ]},
+    {id:gid(),name:'Your Father',relation:'Father (Nanna)',language:'Telugu',birthYear:'1958',deathYear:null,status:'living',generation:3,parentId:fid,description:'Add your own story here.',photo:null,wisdomEntries:[]}
+  ];
+  S.isSample=true;S.chatH={};
+}
+
+function clearSample(){
+  if(!confirm('Clear all sample data and start fresh with your own family?'))return;
+  S.ancestors=[];S.isSample=false;
+  saveS();
+  document.getElementById('sampleBanner').style.display='none';
+  const hint=document.getElementById('homeSmplHint');if(hint)hint.remove();
+  closeTree();showToast('Sample cleared — ready for your family!','success');
+}
+
+function startTour(){
+  try{
+    if(!S.ancestors.length){insertSampleData();tourDemoLoaded=true;saveS();renderHome();}
+    const db=document.getElementById('demoBar');if(db)db.classList.add('show');
+    showTourCard(0);
+  }catch(err){
+    console.warn('Tour error:',err);
+    renderHome();showToast('Sample loaded — explore freely!','success');
+  }
+}
+
+const TOUR_FREE=[
+  {icon:'🌳',title:'Family Tree',desc:'See all generations connected visually. Green border = Living, Gold = Departed. Tap any node to open their full profile.',btn:'View Tree'},
+  {icon:'📜',title:'Wisdom Vault',desc:'Inside each ancestor profile, the Wisdom tab holds all their stories, sayings, life lessons, and memories — with photos.',btn:'Open Ancestor'},
+  {icon:'🖼',title:'Photo Gallery',desc:'The Gallery tab shows all photos uploaded for this ancestor. Tap any photo to view full screen.',btn:'See Gallery'},
+  {icon:'📸',title:'Photo Enhancement',desc:'Every uploaded photo is auto-analysed. Blurry photos are fixed instantly. Use the Before/After slider to compare. Save to device.',btn:'Next'},
+  {icon:'📲',title:'WhatsApp Share & PDF',desc:'Share any wisdom entry to WhatsApp, copy to clipboard, or export a full PDF family report. Open in browser to Print or Save to Files.',btn:'Start My Family'}
+];
+let tourStepFree=0;
+
+function showTourCard(n){
+  tourStepFree=n;
+  const t=TOUR_FREE[n];
+  const dots=TOUR_FREE.map(function(_,i){return '<div style="width:'+(i===n?18:6)+'px;height:6px;border-radius:3px;background:'+(i===n?'var(--go)':'rgba(240,168,24,0.25)')+';transition:all 0.3s"></div>';}).join('');
+  const card=document.getElementById('tourCard');
+  if(!card)return;
+  card.innerHTML=
+    '<div style="display:flex;justify-content:center;gap:6px;margin-bottom:14px">'+dots+'</div>'
+    +'<div style="font-size:11px;font-family:var(--fd);letter-spacing:2px;color:var(--go);margin-bottom:10px">STEP '+(n+1)+' OF '+TOUR_FREE.length+'</div>'
+    +'<div style="font-size:32px;margin-bottom:10px">'+t.icon+'</div>'
+    +'<div style="font-family:var(--fd);font-size:18px;color:var(--gl);letter-spacing:1px;margin-bottom:10px">'+t.title+'</div>'
+    +'<div style="font-size:14px;color:var(--cs);line-height:1.8;margin-bottom:20px">'+t.desc+'</div>'
+    +'<div style="display:flex;gap:10px">'
+    +'<button onclick="exitTour()" style="padding:12px 18px;background:none;border:1px solid rgba(240,168,24,0.3);border-radius:12px;color:var(--cd);font-family:var(--fb);font-size:13px;cursor:pointer">Exit Tour</button>'
+    +'<button onclick="tourAct('+n+')" style="flex:1;padding:13px;background:linear-gradient(135deg,var(--go),#A07010);border:none;border-radius:12px;color:#0E0702;font-family:var(--fd);font-size:13px;font-weight:700;cursor:pointer;letter-spacing:1px">'+t.btn+' &#x2192;</button>'
+    +'</div>';
+  const ov=document.getElementById('tourOverlay');if(ov)ov.style.display='flex';
+}
+
+function tourAct(n){
+  const ov=document.getElementById('tourOverlay');if(ov)ov.style.display='none';
+  if(n===0){openTree();}
+  else if(n===1){closeTree();if(S.ancestors[2])openAnc(S.ancestors[2].id);}
+  else if(n===2){if(S.ancestors[2])openAnc(S.ancestors[2].id);switchTab('g');}
+  else if(n===3){if(n+1<TOUR_FREE.length)setTimeout(function(){showTourCard(n+1);},200);return;}
+  else{exitTour();openAddAncMo();return;}
+  if(n<TOUR_FREE.length-1&&n!==3)setTimeout(function(){showTourCard(n+1);},800);
+}
+
+function exitTour(){
+  const ov=document.getElementById('tourOverlay');if(ov)ov.style.display='none';
+  const db=document.getElementById('demoBar');if(db)db.classList.remove('show');
+  if(tourDemoLoaded){S.ancestors=[];S.isSample=false;tourDemoLoaded=false;saveS();goHome();showToast('Demo exited — add your own family!','success');}
+  else goHome();
+}
+
+// ── ANCESTOR CRUD ──// ── ANCESTOR CRUD ──
 function popParent(curId='',selId=''){const s=document.getElementById('ancPr');s.innerHTML=`<option value="">— Top of tree —</option>`;S.ancestors.filter(a=>a.id!==curId).forEach(a=>{const o=document.createElement('option');o.value=a.id;o.textContent=`${a.name} (${a.relation})`;if(a.id===selId)o.selected=true;s.appendChild(o);});}
 function openAddAncMo(){document.getElementById('ancMoT').textContent='👤 Add Member';['ancN','ancBy','ancDy','ancD'].forEach(id=>document.getElementById(id).value='');document.getElementById('ancR').selectedIndex=0;document.getElementById('ancL').selectedIndex=0;document.getElementById('ancSt').value='expired';document.getElementById('ancGn').value='4';document.getElementById('ancEId').value='';S.ancPh64=null;rstAncP();popParent();openMo('ancMo');}
 function openEditAncMo(id){const a=S.ancestors.find(x=>x.id===id);if(!a)return;document.getElementById('ancMoT').textContent='✏️ Edit Member';document.getElementById('ancN').value=a.name;document.getElementById('ancR').value=a.relation;document.getElementById('ancL').value=a.language||'Telugu';document.getElementById('ancBy').value=a.birthYear||'';document.getElementById('ancDy').value=a.deathYear||'';document.getElementById('ancD').value=a.description||'';document.getElementById('ancSt').value=a.status||'expired';document.getElementById('ancGn').value=a.generation||'4';document.getElementById('ancEId').value=id;S.ancPh64=a.photo||null;if(a.photo){document.getElementById('ancPa').innerHTML=`<input type="file" id="ancPi" accept="image/*" onchange="handleAncP(event)"><img class="pv" src="${a.photo}"><div class="ut">Tap to change</div>`;}else rstAncP();popParent(id,a.parentId||'');openMo('ancMo');}
@@ -735,6 +851,23 @@ function ini(n){return n.split(' ').map(w=>w[0]).join('').toUpperCase().substr(0
 function fmtY(b,d){if(!b&&!d)return '';if(b&&d)return `${b} – ${d}`;if(b)return `Born ${b}`;return '';}
 function tIcon(t){return{Story:'📖','Life Lesson':'💡',Letter:'✉️',Saying:'🗣️',Belief:'🙏',Memory:'🌸'}[t]||'📜';}
 
+function injectPWA(){
+  // Inline SVG icon as data URL for PWA
+  const iconSvg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="80" fill="#0E0702"/><circle cx="256" cy="120" r="52" fill="#4AE080" opacity="0.9"/><circle cx="130" cy="270" r="44" fill="#F0A818" opacity="0.85"/><circle cx="382" cy="270" r="44" fill="#F0A818" opacity="0.85"/><circle cx="80" cy="400" r="36" fill="#C9952A" opacity="0.8"/><circle cx="186" cy="400" r="36" fill="#C9952A" opacity="0.8"/><circle cx="326" cy="400" r="36" fill="#C9952A" opacity="0.8"/><circle cx="432" cy="400" r="36" fill="#4AE080" opacity="0.85"/><line x1="256" y1="172" x2="130" y2="226" stroke="#F0A818" stroke-width="8" stroke-linecap="round"/><line x1="256" y1="172" x2="382" y2="226" stroke="#F0A818" stroke-width="8" stroke-linecap="round"/><line x1="130" y1="314" x2="80" y2="364" stroke="#C9952A" stroke-width="6" stroke-linecap="round"/><line x1="130" y1="314" x2="186" y2="364" stroke="#C9952A" stroke-width="6" stroke-linecap="round"/><line x1="382" y1="314" x2="326" y2="364" stroke="#C9952A" stroke-width="6" stroke-linecap="round"/><line x1="382" y1="314" x2="432" y2="364" stroke="#4AE080" stroke-width="6" stroke-linecap="round"/></svg>`;
+  const iconUrl='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(iconSvg);
+  // Set favicon
+  let lnk=document.querySelector('link[rel~="icon"]');
+  if(!lnk){lnk=document.createElement('link');lnk.rel='icon';document.head.appendChild(lnk);}
+  lnk.type='image/svg+xml';lnk.href=iconUrl;
+  // Set apple touch icon
+  let al=document.querySelector('link[rel="apple-touch-icon"]');
+  if(!al){al=document.createElement('link');al.rel='apple-touch-icon';document.head.appendChild(al);}
+  al.href=iconUrl;
+  // Inject manifest
+  const manifest={name:'Family Tree',short_name:'Family Tree',description:'Preserve your family heritage. Build your tree, record wisdom.',start_url:'.',display:'standalone',background_color:'#0E0702',theme_color:'#F0A818',orientation:'portrait',icons:[{src:iconUrl,sizes:'512x512',type:'image/svg+xml',purpose:'any maskable'}]};
+  const mf=document.getElementById('pwaManifest');
+  if(mf){const blob=new Blob([JSON.stringify(manifest)],{type:'application/json'});mf.href=URL.createObjectURL(blob);}
+}
 init();
 </script>
 </body>
