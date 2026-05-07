@@ -636,7 +636,20 @@ function renderTree(){
       connLines+='<path d="M'+pp.cx+','+(pp.y+NH)+' C'+pp.cx+','+(pp.y+NH+20)+' '+cp.cx+','+(cp.y-20)+' '+cp.cx+','+cp.y+'" stroke="'+col+'" stroke-width="2" fill="none" '+dsh+'/>';
     }
   });
-  const genLbls=gk.map((g,gi)=>{const y=PY+gi*(NH+VG)+NH/2;const lbl={1:'Gen 1',2:'Gen 2',3:'Gen 3',4:'Gen 4',5:'Gen 5',6:'Gen 6'}[g]||'Gen '+g;return `<text x="12" y="${y}" font-family="Cinzel,serif" font-size="9" fill="#B08830" text-anchor="middle" transform="rotate(-90,12,${y})">${lbl}</text>`;}).join('');
+  // Spouse connector — horizontal dashed line between spouses (avoid drawing twice)
+  const drawnSpouses=new Set();
+  S.ancestors.forEach(function(a){
+    if(!a.spouseId||!pos[a.id]||!pos[a.spouseId])return;
+    const key=[a.id,a.spouseId].sort().join('|');
+    if(drawnSpouses.has(key))return;
+    drawnSpouses.add(key);
+    const pa=pos[a.id],pb=pos[a.spouseId];
+    const x1=pa.cx,x2=pb.cx,y=Math.min(pa.y,pb.y)+NH/2;
+    // Small heart/ring at midpoint
+    const mx2=(x1+x2)/2;
+    connLines+='<line x1="'+x1+'" y1="'+y+'" x2="'+x2+'" y2="'+y+'" stroke="rgba(240,168,24,0.6)" stroke-width="2" stroke-dasharray="4,3"/>';
+    connLines+='<text x="'+mx2+'" y="'+(y+4)+'" font-size="11" text-anchor="middle" fill="rgba(240,168,24,0.8)">&#x2665;</text>';
+  });
   const nodes=S.ancestors.map(function(a){
     if(!pos[a.id])return '';
     const p=pos[a.id],lv=a.status==='living';
@@ -873,9 +886,10 @@ function exitTour(){
 }
 
 // ── ANCESTOR CRUD ──// ── ANCESTOR CRUD ──
-function popParent(curId,selFather,selMother){
-  ['ancFather','ancMother'].forEach(function(sid){
+function popParent(curId,selFather,selMother,selSpouse){
+  ['ancFather','ancMother','ancSpouse'].forEach(function(sid){
     const s=document.getElementById(sid);
+    if(!s)return;
     s.innerHTML='<option value="">— Not set —</option>';
     S.ancestors.filter(function(a){return a.id!==curId;}).forEach(function(a){
       const o=document.createElement('option');
@@ -883,15 +897,82 @@ function popParent(curId,selFather,selMother){
       o.textContent=a.name+' ('+a.relation+')';
       if(sid==='ancFather'&&a.id===selFather)o.selected=true;
       if(sid==='ancMother'&&a.id===selMother)o.selected=true;
+      if(sid==='ancSpouse'&&a.id===selSpouse)o.selected=true;
       s.appendChild(o);
     });
   });
 }
-function openAddAncMo(){document.getElementById('ancMoT').textContent='👤 Add Member';['ancN','ancBy','ancDy','ancD'].forEach(id=>document.getElementById(id).value='');document.getElementById('ancR').selectedIndex=0;document.getElementById('ancL').selectedIndex=0;document.getElementById('ancSt').value='expired';document.getElementById('ancGn').value='4';document.getElementById('ancEId').value='';S.ancPh64=null;rstAncP();popParent('','','');openMo('ancMo');}
-function openEditAncMo(id){const a=S.ancestors.find(x=>x.id===id);if(!a)return;document.getElementById('ancMoT').textContent='✏️ Edit Member';document.getElementById('ancN').value=a.name;document.getElementById('ancR').value=a.relation;document.getElementById('ancL').value=a.language||'Telugu';document.getElementById('ancBy').value=a.birthYear||'';document.getElementById('ancDy').value=a.deathYear||'';document.getElementById('ancD').value=a.description||'';document.getElementById('ancSt').value=a.status||'expired';document.getElementById('ancGn').value=a.generation||'4';document.getElementById('ancEId').value=id;S.ancPh64=a.photo||null;if(a.photo){document.getElementById('ancPa').innerHTML='<input type="file" id="ancPi" accept="image/*" onchange="handleAncP(event)"><img class="pv" src="'+a.photo+'"><div class="ut">Tap to change</div>';}else rstAncP();popParent(id,a.fatherId||'',a.motherId||'');openMo('ancMo');}
+function openAddAncMo(){
+  document.getElementById('ancMoT').textContent='👤 Add Member';
+  ['ancN','ancBy','ancDy','ancD'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('ancR').selectedIndex=0;
+  document.getElementById('ancL').selectedIndex=0;
+  document.getElementById('ancSt').value='living';
+  document.getElementById('ancGn').value='4';
+  document.getElementById('ancEId').value='';
+  S.ancPh64=null;rstAncP();
+  openMo('ancMo');
+  setTimeout(function(){popParent('','','','');},80);
+}
+function openEditAncMo(id){
+  const a=S.ancestors.find(x=>x.id===id);if(!a)return;
+  document.getElementById('ancMoT').textContent='✏️ Edit Member';
+  document.getElementById('ancN').value=a.name;
+  document.getElementById('ancR').value=a.relation;
+  document.getElementById('ancL').value=a.language||'Telugu';
+  document.getElementById('ancBy').value=a.birthYear||'';
+  document.getElementById('ancDy').value=a.deathYear||'';
+  document.getElementById('ancD').value=a.description||'';
+  document.getElementById('ancSt').value=a.status||'expired';
+  document.getElementById('ancGn').value=a.generation||'4';
+  document.getElementById('ancEId').value=id;
+  S.ancPh64=a.photo||null;
+  if(a.photo){document.getElementById('ancPa').innerHTML='<input type="file" id="ancPi" accept="image/*" onchange="handleAncP(event)"><img class="pv" src="'+a.photo+'"><div class="ut">Tap to change</div>';}
+  else rstAncP();
+  openMo('ancMo');
+  setTimeout(function(){popParent(id,a.fatherId||'',a.motherId||'',a.spouseId||'');},80);
+}
 function rstAncP(){document.getElementById('ancPa').innerHTML=`<input type="file" id="ancPi" accept="image/*" onchange="handleAncP(event)"><div class="ui">👤</div><div class="ut">Tap to add photo</div>`;}
 function handleAncP(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>openEnh(ev.target.result,'anc');r.readAsDataURL(f);}
-function saveAnc(){const name=document.getElementById('ancN').value.trim();if(!name){showToast('Please enter a name','error');return;}const eid=document.getElementById('ancEId').value;const fid=document.getElementById('ancFather').value||null;const mid=document.getElementById('ancMother').value||null;const data={name,relation:document.getElementById('ancR').value,language:document.getElementById('ancL').value,birthYear:document.getElementById('ancBy').value||null,deathYear:document.getElementById('ancDy').value||null,description:document.getElementById('ancD').value.trim(),status:document.getElementById('ancSt').value,generation:parseInt(document.getElementById('ancGn').value)||4,fatherId:fid,motherId:mid,parentId:fid||mid||null,photo:S.ancPh64};if(eid){const i=S.ancestors.findIndex(a=>a.id===eid);if(i>-1){S.ancestors[i]={...S.ancestors[i],...data};showToast('Updated ✓','success');}}else{S.ancestors.push({id:gid(),wisdomEntries:[],...data});showToast('Member added ✓','success');}saveS();closeMo('ancMo');if(eid&&S.curId===eid)renderDet();else renderHome();}
+function saveAnc(){
+  const name=document.getElementById('ancN').value.trim();
+  if(!name){showToast('Please enter a name','error');return;}
+  const eid=document.getElementById('ancEId').value;
+  const fid=document.getElementById('ancFather').value||null;
+  const mid=document.getElementById('ancMother').value||null;
+  const sid=document.getElementById('ancSpouse').value||null;
+  const data={name,relation:document.getElementById('ancR').value,language:document.getElementById('ancL').value,
+    birthYear:document.getElementById('ancBy').value||null,deathYear:document.getElementById('ancDy').value||null,
+    description:document.getElementById('ancD').value.trim(),status:document.getElementById('ancSt').value,
+    generation:parseInt(document.getElementById('ancGn').value)||4,
+    fatherId:fid,motherId:mid,parentId:fid||mid||null,spouseId:sid,photo:S.ancPh64};
+  let savedId=eid;
+  if(eid){
+    const i=S.ancestors.findIndex(a=>a.id===eid);
+    if(i>-1){S.ancestors[i]={...S.ancestors[i],...data};showToast('Updated ✓','success');}
+  }else{
+    savedId=gid();
+    S.ancestors.push({id:savedId,wisdomEntries:[],...data});
+    showToast('Member added ✓','success');
+  }
+  // Bidirectional spouse sync — if A sets B as spouse, also set A as B's spouse
+  if(sid){
+    const spouseAnc=S.ancestors.find(function(a){return a.id===sid;});
+    if(spouseAnc&&!spouseAnc.spouseId){spouseAnc.spouseId=savedId;}
+  }
+  // Clear old spouse link if changed
+  if(eid){
+    S.ancestors.forEach(function(a){
+      if(a.spouseId===eid&&a.id!==sid){
+        // Only clear if this person no longer points back
+        const current=S.ancestors.find(function(x){return x.id===eid;});
+        if(current&&current.spouseId!==a.id)a.spouseId=null;
+      }
+    });
+  }
+  saveS();closeMo('ancMo');
+  if(eid&&S.curId===eid)renderDet();else renderHome();
+}
 
 // ── WISDOM CRUD ──
 function openWisMo(){S.wisPh64=null;S.wisPhTp=null;document.getElementById('wisT').value='';document.getElementById('wisUI').textContent='🖼️';document.getElementById('wisUT').textContent='Tap to upload photo or document';document.querySelector('.wtb.sl2')?.classList.remove('sl2');document.querySelector('.wtb[data-type="Story"]').classList.add('sl2');document.getElementById('wisPa').querySelector('img')?.remove();openMo('wisMo');}
@@ -970,6 +1051,18 @@ function printFamilyTree(){
     });
 
     // ── GEN LABELS ──
+    // Spouse connectors in print
+    const drawnSp=new Set();
+    S.ancestors.forEach(function(a){
+      if(!a.spouseId||!pos[a.id]||!pos[a.spouseId])return;
+      const key=[a.id,a.spouseId].sort().join('|');
+      if(drawnSp.has(key))return;drawnSp.add(key);
+      const pa=pos[a.id],pb=pos[a.spouseId];
+      const x1=pa.cx,x2=pb.cx,y=Math.min(pa.y,pb.y)+NH/2;
+      svgLines+='<line x1="'+x1+'" y1="'+y+'" x2="'+x2+'" y2="'+y+'" stroke="#b08020" stroke-width="2" stroke-dasharray="5,3"/>';
+      svgLines+='<text x="'+((x1+x2)/2)+'" y="'+(y+4)+'" font-size="12" text-anchor="middle" fill="#b08020">&#x2665;</text>';
+    });
+
     const svgLabels=gk.map(function(g,gi){
       const lbl={1:'Gen 1',2:'Gen 2',3:'Gen 3',4:'Gen 4',5:'Gen 5',6:'Gen 6'}[g]||('Gen '+g);
       const midY=PY+gi*(NH+VG)+NH/2;
