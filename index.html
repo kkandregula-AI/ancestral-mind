@@ -998,8 +998,11 @@ function printFamilyTree(){
         +'</div>';
     }).join('');
 
-    const fam=S.ancestors[0]&&S.ancestors[0].name?S.ancestors[0].name.split(' ')[0]:'Family';
-    const famLast=S.ancestors[0]&&S.ancestors[0].name?S.ancestors[0].name.split(' ').slice(-1)[0]:'';
+    const selfPerson=S.ancestors.find(function(a){return a.relation&&a.relation.toLowerCase().includes('self');});
+    const titlePerson=selfPerson||S.ancestors[0];
+    const selfName=titlePerson&&titlePerson.name?titlePerson.name:'';
+    const fam=selfName?selfName+"'s Family":'Our Family';
+    const famLast=selfName?selfName:"Family";
     const date=new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
 
     const win=window.open('','_blank');
@@ -1007,7 +1010,7 @@ function printFamilyTree(){
 
     win.document.write('<!DOCTYPE html><html><head>'
       +'<meta charset="UTF-8">'
-      +'<title>'+famLast+' Family Tree</title>'
+      +'<title>'+fam+'</title>'
       +'<style>'
       +'*{margin:0;padding:0;box-sizing:border-box}'
       +'html,body{background:#fdf8f0;font-family:Georgia,serif}'
@@ -1022,13 +1025,13 @@ function printFamilyTree(){
 
       // ── PRINT BUTTON BAR ──
       +'<div class="no-print" style="background:#2c1800;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10">'
-      +'<div style="color:#ffd040;font-size:14px;font-weight:bold;font-family:Georgia,serif">'+famLast+' Family Tree &nbsp;·&nbsp; <span style="font-size:12px;color:#c9952a">'+S.ancestors.length+' members</span></div>'
+      +'<div style="color:#ffd040;font-size:13px;font-weight:bold;font-family:Georgia,serif">'+fam+' &nbsp;·&nbsp; <span style="font-size:11px;color:#c9952a">'+S.ancestors.length+' members</span></div>'
       +'<button onclick="window.print()" style="background:linear-gradient(135deg,#f0a818,#8a5e00);border:none;border-radius:8px;color:#fff;font-weight:bold;padding:10px 24px;cursor:pointer;font-size:14px;font-family:Georgia,serif;letter-spacing:0.5px">🖨️ Print / Save PDF</button>'
       +'</div>'
 
       // ── COVER HEADER ──
       +'<div style="text-align:center;padding:22px 20px 16px;border-bottom:2px solid #c9952a;margin-bottom:20px;background:#fdf8f0">'
-      +'<div style="font-size:32px;font-weight:bold;color:#8a5e00;font-family:Georgia,serif;letter-spacing:1px;margin-bottom:6px">The '+famLast+' Family</div>'
+      +'<div style="font-size:28px;font-weight:bold;color:#8a5e00;font-family:Georgia,serif;letter-spacing:0.5px;margin-bottom:6px">'+fam+'</div>'
       +'<div style="display:flex;justify-content:center;align-items:center;gap:6px;margin-bottom:6px">'
       +'<span style="height:1px;width:40px;background:#c9952a;display:inline-block"></span>'
       +'<span style="font-size:18px">🌳</span>'
