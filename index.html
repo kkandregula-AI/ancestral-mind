@@ -610,6 +610,25 @@ function renderTree(){
   const gens={};S.ancestors.forEach(a=>{const g=a.generation||4;if(!gens[g])gens[g]=[];gens[g].push(a);});
   const gk=Object.keys(gens).map(Number).sort((a,b)=>a-b);
   const NW=120,NH=108,HG=14,VG=60,PX=40,PY=30;
+
+  // Sort each generation row so spouses are always adjacent
+  gk.forEach(function(g){
+    const row=gens[g];
+    const placed={};
+    const sorted=[];
+    row.forEach(function(a){
+      if(placed[a.id])return;
+      placed[a.id]=true;
+      sorted.push(a);
+      // Immediately place spouse next if they're in the same generation
+      if(a.spouseId&&!placed[a.spouseId]){
+        const spouse=row.find(function(x){return x.id===a.spouseId;});
+        if(spouse){placed[spouse.id]=true;sorted.push(spouse);}
+      }
+    });
+    gens[g]=sorted;
+  });
+
   const mx=Math.max(...gk.map(g=>gens[g].length));
   const TW=Math.max(mx*(NW+HG)+PX*2,340),TH=gk.length*(NH+VG)+PY*2;
   const pos={};
@@ -1029,6 +1048,20 @@ function printFamilyTree(){
     S.ancestors.forEach(function(a){const g=a.generation||4;if(!gens[g])gens[g]=[];gens[g].push(a);});
     const gk=Object.keys(gens).map(Number).sort(function(a,b){return a-b;});
     const NW=140,NH=130,HG=20,VG=70,PX=50,PY=20;
+
+    // Sort each generation so spouses are adjacent
+    gk.forEach(function(g){
+      const row=gens[g],placed={},sorted=[];
+      row.forEach(function(a){
+        if(placed[a.id])return;placed[a.id]=true;sorted.push(a);
+        if(a.spouseId&&!placed[a.spouseId]){
+          const sp=row.find(function(x){return x.id===a.spouseId;});
+          if(sp){placed[sp.id]=true;sorted.push(sp);}
+        }
+      });
+      gens[g]=sorted;
+    });
+
     const mx=Math.max.apply(null,gk.map(function(g){return gens[g].length;}));
     const TW=Math.max(mx*(NW+HG)-HG+PX*2, 500);
     const TH=gk.length*(NH+VG)-VG+PY+60;
