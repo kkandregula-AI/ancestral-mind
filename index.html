@@ -495,14 +495,13 @@ footer{text-align:center;padding:28px 20px 36px;border-top:1px solid var(--br);m
 <!-- FOOTER (home only) -->
 <footer id="appFooter">
   <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px">
-    <div style="width:1px;height:28px;background:linear-gradient(180deg,transparent,var(--go),transparent)"></div>
-    <span style="font-size:22px">🕯️</span>
-    <div style="width:1px;height:28px;background:linear-gradient(180deg,transparent,var(--go),transparent)"></div>
+    <div style="width:60px;height:1px;background:linear-gradient(90deg,transparent,var(--go))"></div>
+    <span style="font-size:18px">🌳</span>
+    <div style="width:60px;height:1px;background:linear-gradient(270deg,transparent,var(--go))"></div>
   </div>
   <div style="font-family:var(--fd);font-size:11px;letter-spacing:3px;color:var(--go);text-transform:uppercase;margin-bottom:8px">Designed &amp; Built by</div>
   <div style="font-family:var(--fh);font-size:18px;color:var(--gl);font-weight:600;margin-bottom:14px;letter-spacing:0.5px">Kandregula Krishnamurthy</div>
-  <div style="display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px;color:var(--cd)">
-    <span>AncestralMind</span>
+  <div style="display:flex;align-items:center;justify-content:center">
     <span style="display:inline-flex;align-items:center;gap:5px;background:rgba(64,238,228,0.12);border:1px solid rgba(64,238,228,0.4);border-radius:20px;padding:3px 10px;color:var(--tll);font-family:var(--fd);font-size:10px;letter-spacing:1px;font-weight:600">🌳 Family Tree App</span>
   </div>
   <div style="margin-top:12px;font-size:11px;color:var(--cd);letter-spacing:1px;font-family:var(--fd)">Krishnamurthy Kandregula Innovation Lab</div>
@@ -602,7 +601,12 @@ function openTree(){document.getElementById('homeScr').classList.remove('act');d
 function closeTree(){document.getElementById('treeScr').classList.remove('act');document.getElementById('homeScr').classList.add('act');document.getElementById('appFooter').style.display='block';renderHome();}
 function renderTree(){
   const c=document.getElementById('treeSvgContainer');
-  if(!S.ancestors.length){c.innerHTML=`<div class="tree-empty"><div class="tei">🌳</div><p>No members yet.<br>Add family members to build your tree.</p><button class="ob-cta" onclick="closeTree();setTimeout(openAddAncMo,200)" style="max-width:240px">+ Add First Member</button></div>`;return;}
+  if(!c)return;
+  if(!S.ancestors.length){
+    c.innerHTML='<div class="tree-empty"><div class="tei">🌳</div><p>No members yet.<br>Add family members to build your tree.</p><button class="ob-cta" onclick="closeTree();setTimeout(openAddAncMo,200)" style="max-width:240px">+ Add First Member</button></div>';
+    return;
+  }
+  try{
   const gens={};S.ancestors.forEach(a=>{const g=a.generation||4;if(!gens[g])gens[g]=[];gens[g].push(a);});
   const gk=Object.keys(gens).map(Number).sort((a,b)=>a-b);
   const NW=120,NH=108,HG=14,VG=60,PX=40,PY=30;
@@ -636,20 +640,28 @@ function renderTree(){
       connLines+='<path d="M'+pp.cx+','+(pp.y+NH)+' C'+pp.cx+','+(pp.y+NH+20)+' '+cp.cx+','+(cp.y-20)+' '+cp.cx+','+cp.y+'" stroke="'+col+'" stroke-width="2" fill="none" '+dsh+'/>';
     }
   });
-  // Spouse connector — horizontal dashed line between spouses (avoid drawing twice)
-  const drawnSpouses=new Set();
-  S.ancestors.forEach(function(a){
-    if(!a.spouseId||!pos[a.id]||!pos[a.spouseId])return;
-    const key=[a.id,a.spouseId].sort().join('|');
-    if(drawnSpouses.has(key))return;
-    drawnSpouses.add(key);
-    const pa=pos[a.id],pb=pos[a.spouseId];
-    const x1=pa.cx,x2=pb.cx,y=Math.min(pa.y,pb.y)+NH/2;
-    // Small heart/ring at midpoint
-    const mx2=(x1+x2)/2;
-    connLines+='<line x1="'+x1+'" y1="'+y+'" x2="'+x2+'" y2="'+y+'" stroke="rgba(240,168,24,0.6)" stroke-width="2" stroke-dasharray="4,3"/>';
-    connLines+='<text x="'+mx2+'" y="'+(y+4)+'" font-size="11" text-anchor="middle" fill="rgba(240,168,24,0.8)">&#x2665;</text>';
-  });
+  // Spouse connectors — horizontal dashed line with heart between couples
+  try{
+    const drawnSpouses={};
+    S.ancestors.forEach(function(a){
+      if(!a.spouseId||!pos[a.id]||!pos[a.spouseId])return;
+      const k1=a.id+'_'+a.spouseId, k2=a.spouseId+'_'+a.id;
+      if(drawnSpouses[k1]||drawnSpouses[k2])return;
+      drawnSpouses[k1]=true;
+      const pa=pos[a.id],pb=pos[a.spouseId];
+      const x1=Math.min(pa.cx,pb.cx)+NW/2,x2=Math.max(pa.cx,pb.cx)-NW/2;
+      const y=Math.min(pa.y,pb.y)+NH/2;
+      const mx2=(pa.cx+pb.cx)/2;
+      connLines+='<line x1="'+x1+'" y1="'+y+'" x2="'+x2+'" y2="'+y+'" stroke="rgba(240,168,24,0.55)" stroke-width="2" stroke-dasharray="4,3"/>';
+      connLines+='<circle cx="'+mx2+'" cy="'+y+'" r="5" fill="rgba(240,168,24,0.2)" stroke="rgba(240,168,24,0.6)" stroke-width="1.5"/>';
+      connLines+='<text x="'+mx2+'" y="'+(y+3.5)+'" font-size="8" text-anchor="middle" fill="rgba(240,168,24,0.9)">\u2665</text>';
+    });
+  }catch(e){console.warn('Spouse connector error:',e);}
+  const genLbls=gk.map(function(g,gi){
+    const gy=PY+gi*(NH+VG)+NH/2;
+    const lbl={1:'Gen 1',2:'Gen 2',3:'Gen 3',4:'Gen 4',5:'Gen 5',6:'Gen 6'}[g]||('Gen '+g);
+    return '<text x="12" y="'+gy+'" font-family="Cinzel,serif" font-size="9" fill="#B08830" text-anchor="middle" transform="rotate(-90,12,'+gy+')">'+lbl+'</text>';
+  }).join('');
   const nodes=S.ancestors.map(function(a){
     if(!pos[a.id])return '';
     const p=pos[a.id],lv=a.status==='living';
@@ -667,6 +679,10 @@ function renderTree(){
   }).join('');
   c.style.width=TW+'px';c.style.height=TH+'px';
   c.innerHTML='<svg style="position:absolute;top:0;left:0;width:'+TW+'px;height:'+TH+'px;pointer-events:none;overflow:visible">'+genLbls+connLines+'</svg>'+nodes;
+  }catch(err){
+    console.warn('renderTree error:',err);
+    c.innerHTML='<div class="tree-empty"><div class="tei">🌳</div><p>Tree could not render.<br>Please try refreshing the page.</p><div style="font-size:11px;color:var(--cd);margin-top:8px">'+err.message+'</div></div>';
+  }
 }
 
 // ── RENDER HOME ──
@@ -1052,16 +1068,21 @@ function printFamilyTree(){
 
     // ── GEN LABELS ──
     // Spouse connectors in print
-    const drawnSp=new Set();
-    S.ancestors.forEach(function(a){
-      if(!a.spouseId||!pos[a.id]||!pos[a.spouseId])return;
-      const key=[a.id,a.spouseId].sort().join('|');
-      if(drawnSp.has(key))return;drawnSp.add(key);
-      const pa=pos[a.id],pb=pos[a.spouseId];
-      const x1=pa.cx,x2=pb.cx,y=Math.min(pa.y,pb.y)+NH/2;
-      svgLines+='<line x1="'+x1+'" y1="'+y+'" x2="'+x2+'" y2="'+y+'" stroke="#b08020" stroke-width="2" stroke-dasharray="5,3"/>';
-      svgLines+='<text x="'+((x1+x2)/2)+'" y="'+(y+4)+'" font-size="12" text-anchor="middle" fill="#b08020">&#x2665;</text>';
-    });
+    try{
+      const drawnSp={};
+      S.ancestors.forEach(function(a){
+        if(!a.spouseId||!pos[a.id]||!pos[a.spouseId])return;
+        const k1=a.id+'_'+a.spouseId,k2=a.spouseId+'_'+a.id;
+        if(drawnSp[k1]||drawnSp[k2])return;drawnSp[k1]=true;
+        const pa=pos[a.id],pb=pos[a.spouseId];
+        const x1=Math.min(pa.cx,pb.cx)+NW/2,x2=Math.max(pa.cx,pb.cx)-NW/2;
+        const y=Math.min(pa.y,pb.y)+NH/2;
+        const mx2=(pa.cx+pb.cx)/2;
+        svgLines+='<line x1="'+x1+'" y1="'+y+'" x2="'+x2+'" y2="'+y+'" stroke="#b08020" stroke-width="2" stroke-dasharray="5,3"/>';
+        svgLines+='<circle cx="'+mx2+'" cy="'+y+'" r="6" fill="#fffbf0" stroke="#b08020" stroke-width="1.5"/>';
+        svgLines+='<text x="'+mx2+'" y="'+(y+4)+'" font-size="9" text-anchor="middle" fill="#b08020">\u2665</text>';
+      });
+    }catch(e){}
 
     const svgLabels=gk.map(function(g,gi){
       const lbl={1:'Gen 1',2:'Gen 2',3:'Gen 3',4:'Gen 4',5:'Gen 5',6:'Gen 6'}[g]||('Gen '+g);
@@ -1181,116 +1202,93 @@ function printFamilyTree(){
 }
 // ── END PRINT FAMILY TREE ────────────────────────────────
 function injectPWA(){
-  // Draw icon on canvas → PNG → use for all PWA icon slots
   const size=512;
   const ic=document.createElement('canvas');
   ic.width=size;ic.height=size;
   const ctx=ic.getContext('2d');
 
-  // Background rounded rect
-  const r=80;
-  ctx.beginPath();
-  ctx.moveTo(r,0);ctx.lineTo(size-r,0);ctx.quadraticCurveTo(size,0,size,r);
+  // Background - deep forest green
+  const r=72;
+  ctx.beginPath();ctx.moveTo(r,0);ctx.lineTo(size-r,0);ctx.quadraticCurveTo(size,0,size,r);
   ctx.lineTo(size,size-r);ctx.quadraticCurveTo(size,size,size-r,size);
   ctx.lineTo(r,size);ctx.quadraticCurveTo(0,size,0,size-r);
-  ctx.lineTo(0,r);ctx.quadraticCurveTo(0,0,r,0);
-  ctx.closePath();
-  ctx.fillStyle='#0E0702';ctx.fill();
+  ctx.lineTo(0,r);ctx.quadraticCurveTo(0,0,r,0);ctx.closePath();
+  const bg=ctx.createRadialGradient(256,220,40,256,256,300);
+  bg.addColorStop(0,'#1a3a1a');bg.addColorStop(1,'#0d1f0d');
+  ctx.fillStyle=bg;ctx.fill();
 
-  // Subtle radial glow centre
-  const grd=ctx.createRadialGradient(256,180,30,256,180,260);
-  grd.addColorStop(0,'rgba(240,168,24,0.18)');grd.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=grd;ctx.fill();
+  // Trunk
+  ctx.beginPath();ctx.moveTo(228,462);ctx.bezierCurveTo(224,390,240,345,256,285);
+  ctx.bezierCurveTo(272,345,288,390,284,462);ctx.closePath();
+  ctx.fillStyle='#6B3F1F';ctx.fill();
 
-  // Draw tree connector lines first (behind nodes)
-  function line(x1,y1,x2,y2,col,w){
-    ctx.beginPath();ctx.moveTo(x1,y1);
-    const cy1=y1+(y2-y1)*0.45,cy2=y2-(y2-y1)*0.45;
-    ctx.bezierCurveTo(x1,cy1,x2,cy2,x2,y2);
-    ctx.strokeStyle=col;ctx.lineWidth=w;ctx.lineCap='round';ctx.stroke();
+  // Branches
+  ctx.strokeStyle='#7a4e2a';ctx.lineCap='round';
+  function br(x1,y1,x2,y2,w){ctx.beginPath();ctx.moveTo(x1,y1);ctx.quadraticCurveTo((x1+x2)/2,y1-10,x2,y2);ctx.lineWidth=w;ctx.stroke();}
+  br(252,310,145,245,10);br(260,310,367,245,10);
+  br(200,275,118,205,7);br(204,272,172,188,6);
+  br(312,275,394,205,7);br(308,272,340,186,6);
+  br(256,298,256,205,8);
+
+  // Foliage
+  function leaf(cx,cy,rad,c1,c2){
+    const g=ctx.createRadialGradient(cx-rad*0.15,cy-rad*0.2,rad*0.1,cx,cy,rad);
+    g.addColorStop(0,c1);g.addColorStop(1,c2);
+    ctx.beginPath();ctx.arc(cx,cy,rad,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
   }
-  // Gen1 → Gen2
-  line(256,175,148,295,'rgba(240,168,24,0.7)',7);
-  line(256,175,364,295,'rgba(240,168,24,0.7)',7);
-  // Gen2 → Gen3
-  line(148,341,90,422,'rgba(201,149,42,0.6)',6);
-  line(148,341,206,422,'rgba(201,149,42,0.6)',6);
-  line(364,341,306,422,'rgba(201,149,42,0.6)',6);
-  line(364,341,422,422,'rgba(74,224,128,0.65)',6);
+  leaf(256,152,90,'#66BB6A','#1B5E20');
+  leaf(155,218,65,'#4CAF50','#1B5E20');
+  leaf(357,218,65,'#4CAF50','#1B5E20');
+  leaf(118,172,50,'#388E3C','#1B5E20');
+  leaf(394,172,50,'#388E3C','#1B5E20');
+  leaf(202,164,46,'#81C784','#2E7D32');
+  leaf(310,164,46,'#81C784','#2E7D32');
+  leaf(256,108,52,'#A5D6A7','#388E3C');
 
-  // Draw node circles
-  function node(cx,cy,rad,fill,ring,label){
-    // Shadow glow
-    ctx.beginPath();ctx.arc(cx,cy,rad+6,0,Math.PI*2);
-    ctx.fillStyle='rgba(0,0,0,0.35)';ctx.fill();
-    // Fill
-    ctx.beginPath();ctx.arc(cx,cy,rad,0,Math.PI*2);
-    ctx.fillStyle=fill;ctx.fill();
-    // Ring
-    ctx.beginPath();ctx.arc(cx,cy,rad,0,Math.PI*2);
-    ctx.strokeStyle=ring;ctx.lineWidth=5;ctx.stroke();
-    // Label
-    ctx.fillStyle=ring;
-    ctx.font='bold '+(rad*0.7)+'px Arial';
-    ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText(label,cx,cy+2);
+  // Person nodes
+  function person(cx,cy,rad,bg,ring,lbl){
+    ctx.beginPath();ctx.arc(cx,cy+3,rad+2,0,Math.PI*2);ctx.fillStyle='rgba(0,0,0,0.35)';ctx.fill();
+    ctx.beginPath();ctx.arc(cx,cy,rad,0,Math.PI*2);ctx.fillStyle=bg;ctx.fill();
+    ctx.beginPath();ctx.arc(cx,cy,rad,0,Math.PI*2);ctx.strokeStyle=ring;ctx.lineWidth=3;ctx.stroke();
+    ctx.fillStyle=ring;ctx.font='bold '+(rad*0.72)+'px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(lbl,cx,cy+1);
   }
+  // Gen1 top (gold/departed)
+  person(256,86,26,'#2C1800','#F0A818','G');
+  // Gen2 (gold)
+  person(148,238,21,'#2C1800','#E09010','F');
+  person(364,238,21,'#2C1800','#E09010','M');
+  // Gen3 self+spouse (green/living)
+  person(194,278,19,'#0A2010','#4AE080','S');
+  person(318,278,19,'#0A2010','#4AE080','W');
+  // Gen4 children (teal)
+  person(158,196,15,'#051515','#40EEE4','C');
+  person(354,196,15,'#051515','#40EEE4','C');
 
-  // Gen 1 — root (green glow, living feel)
-  node(256,130,52,'rgba(26,78,26,0.9)','#4AE080','🌳');
+  // Heart between couple
+  ctx.font='18px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillStyle='rgba(240,168,24,0.9)';ctx.fillText('♥',256,284);
 
-  // Gen 2 — departed gold
-  node(148,318,44,'rgba(50,32,8,0.95)','#F0A818','VR');
-  node(364,318,44,'rgba(50,32,8,0.95)','#F0A818','SK');
-
-  // Gen 3 — mix
-  node(90,448,34,'rgba(40,26,6,0.95)','#C9952A','KR');
-  node(206,448,34,'rgba(40,26,6,0.95)','#C9952A','SR');
-  node(306,448,34,'rgba(40,26,6,0.95)','#C9952A','MR');
-  node(422,448,34,'rgba(20,52,28,0.95)','#4AE080','YF');
-
-  // App name at bottom
-  ctx.fillStyle='rgba(240,208,64,0.85)';
-  ctx.font='bold 38px Georgia,serif';
-  ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillText('FAMILY TREE',256,490);
+  // "FAMILY TREE" label
+  ctx.shadowColor='rgba(74,224,128,0.5)';ctx.shadowBlur=14;
+  ctx.fillStyle='#C8F0C8';ctx.font='bold 42px Georgia,serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('FAMILY TREE',256,474);
+  ctx.shadowBlur=0;
 
   const pngUrl=ic.toDataURL('image/png');
-
-  // ── Set favicon ──
+  // Favicon
   let lnk=document.querySelector('link[rel~="icon"]');
   if(!lnk){lnk=document.createElement('link');lnk.rel='icon';document.head.appendChild(lnk);}
   lnk.type='image/png';lnk.href=pngUrl;
-
-  // ── Set apple-touch-icon (iOS home screen) ──
-  let al=document.querySelector('link[rel="apple-touch-icon"]');
-  if(!al){al=document.createElement('link');al.rel='apple-touch-icon';document.head.appendChild(al);}
-  al.href=pngUrl;
-
-  // ── Set apple-touch-icon-precomposed as well ──
-  let alp=document.querySelector('link[rel="apple-touch-icon-precomposed"]');
-  if(!alp){alp=document.createElement('link');alp.rel='apple-touch-icon-precomposed';document.head.appendChild(alp);}
-  alp.href=pngUrl;
-
-  // ── Inject PWA manifest ──
-  const manifest={
-    name:'Family Tree',
-    short_name:'Family Tree',
-    description:'Preserve your family heritage. Build your tree, record wisdom, keep memory alive.',
-    start_url:'.',
-    display:'standalone',
-    background_color:'#0E0702',
-    theme_color:'#F0A818',
-    orientation:'portrait-primary',
-    icons:[
-      {src:pngUrl,sizes:'512x512',type:'image/png',purpose:'any'},
-      {src:pngUrl,sizes:'512x512',type:'image/png',purpose:'maskable'}
-    ]
-  };
-  let mf=document.getElementById('pwaManifest');
-  if(!mf){mf=document.createElement('link');mf.rel='manifest';mf.id='pwaManifest';document.head.appendChild(mf);}
-  const blob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
-  mf.href=URL.createObjectURL(blob);
+  // Apple icons
+  ['apple-touch-icon','apple-touch-icon-precomposed'].forEach(function(rel){
+    let a=document.querySelector('link[rel="'+rel+'"]');
+    if(!a){a=document.createElement('link');a.rel=rel;document.head.appendChild(a);}
+    a.href=pngUrl;
+  });
+  // Manifest
+  const mf=document.getElementById('pwaManifest')||document.createElement('link');
+  mf.rel='manifest';mf.id='pwaManifest';if(!mf.parentNode)document.head.appendChild(mf);
+  try{mf.href=URL.createObjectURL(new Blob([JSON.stringify({name:'Family Tree',short_name:'Family Tree',start_url:'.',display:'standalone',background_color:'#0d1f0d',theme_color:'#4CAF50',orientation:'portrait-primary',icons:[{src:pngUrl,sizes:'512x512',type:'image/png',purpose:'any'},{src:pngUrl,sizes:'512x512',type:'image/png',purpose:'maskable'}]})],{type:'application/json'}));}catch(e){}
 }
 init();
 </script>
