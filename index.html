@@ -821,8 +821,9 @@ function exportPDF(aId){
     +'<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#fdf8f0;font-family:Georgia,serif;padding:24px;max-width:680px;margin:0 auto;color:#2c1800}'
     +'@media print{body{background:#fdf8f0!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}.no-print{display:none!important}}'
     +'</style></head><body>'
-    +'<div class="no-print" style="background:#2c1800;border-radius:10px;padding:12px 18px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:center">'
-    +'<span style="color:#ffd040;font-size:13px;font-weight:bold;font-family:Georgia,serif">Family Tree — Wisdom Report</span>'
+    +'<div class="no-print" style="background:#2c1800;border-radius:10px;padding:12px 18px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:center;gap:10px">'
+    +'<button onclick="window.close()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:8px;color:#ffd040;padding:8px 14px;cursor:pointer;font-size:13px;font-family:Georgia,serif">← Back</button>'
+    +'<span style="color:#ffd040;font-size:13px;font-weight:bold;font-family:Georgia,serif;flex:1;text-align:center">Family Tree — Wisdom Report</span>'
     +'<button onclick="window.print()" style="background:linear-gradient(135deg,#f0a818,#8a5e00);border:none;border-radius:8px;color:#fff;font-weight:bold;padding:8px 20px;cursor:pointer;font-size:13px">🖨️ Print / Save PDF</button>'
     +'</div>'
     +'<div style="background:'+(lv?'#f0fff4':'#fffbf0')+';border:2.5px solid '+(lv?'#2e7d32':'#b08020')+';border-radius:16px;padding:22px;margin-bottom:24px">'
@@ -1192,9 +1193,10 @@ function printFamilyTree(){
       +'</head><body style="padding:0;background:#fdf8f0">'
 
       // ── PRINT BUTTON BAR ──
-      +'<div class="no-print" style="background:#2c1800;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10">'
-      +'<div style="color:#ffd040;font-size:13px;font-weight:bold;font-family:Georgia,serif">'+fam+' &nbsp;·&nbsp; <span style="font-size:11px;color:#c9952a">'+S.ancestors.length+' members</span></div>'
-      +'<button onclick="window.print()" style="background:linear-gradient(135deg,#f0a818,#8a5e00);border:none;border-radius:8px;color:#fff;font-weight:bold;padding:10px 24px;cursor:pointer;font-size:14px;font-family:Georgia,serif;letter-spacing:0.5px">🖨️ Print / Save PDF</button>'
+      +'<div class="no-print" style="background:#2c1800;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10;gap:10px">'
+      +'<button onclick="window.close()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:8px;color:#ffd040;padding:8px 14px;cursor:pointer;font-size:13px;font-family:Georgia,serif;white-space:nowrap">← Back</button>'
+      +'<div style="color:#ffd040;font-size:13px;font-weight:bold;font-family:Georgia,serif;flex:1;text-align:center">'+fam+' &nbsp;·&nbsp; <span style="font-size:11px;color:#c9952a">'+S.ancestors.length+' members</span></div>'
+      +'<button onclick="window.print()" style="background:linear-gradient(135deg,#f0a818,#8a5e00);border:none;border-radius:8px;color:#fff;font-weight:bold;padding:10px 20px;cursor:pointer;font-size:13px;font-family:Georgia,serif;white-space:nowrap">🖨️ Print / Save PDF</button>'
       +'</div>'
 
       // ── COVER HEADER ──
