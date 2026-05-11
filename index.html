@@ -795,36 +795,53 @@ function shareAllWA(aId){const a=S.ancestors.find(x=>x.id===aId);if(!a)return;co
 function copyEntry(aId,wId){const a=S.ancestors.find(x=>x.id===aId),w=a?.wisdomEntries?.find(x=>x.id===wId);if(!a||!w)return;const t=`${a.name} — ${a.relation}\n\n${w.type}\n${w.text||''}\n\n${new Date(w.timestamp).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}`;navigator.clipboard?.writeText(t).then(()=>showToast('Copied ✓','success')).catch(()=>showToast('Copy failed','error'));}
 
 // ── PDF ──
-async function exportPDF(aId){
+function exportPDF(aId){
   const a=S.ancestors.find(x=>x.id===aId);if(!a)return;
-  showPdfPg('Generating Report…','Preparing…',5);await sl(100);
-  if(!window.jspdf?.jsPDF){showToast('PDF library loading, please retry','error');hidePdfPg();return;}
-  const {jsPDF}=window.jspdf,doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-  const PW=210,ML=18,MT=20,UW=PW-ML*2;let y=MT;
-  function chk(n=10){if(y+n>281){doc.addPage();y=MT;}}
-  function sf(st,sz,col=[30,15,5]){doc.setFont('helvetica',st);doc.setFontSize(sz);doc.setTextColor(...col);}
-  function ln(x1,y1,x2,y2,col=[201,149,42],w=0.4){doc.setDrawColor(...col);doc.setLineWidth(w);doc.line(x1,y1,x2,y2);}
-  function wr(txt,x,mw,lh=5.5){doc.splitTextToSize(txt,mw).forEach(l=>{chk(lh);doc.text(l,x,y);y+=lh;});}
-  showPdfPg('Generating Report…','Drawing header…',20);await sl(80);
-  doc.setFillColor(14,7,2);doc.rect(0,0,PW,42,'F');
-  sf('bold',18,[240,200,80]);doc.text('AncestralMind',PW/2,28,{align:'center'});
-  sf('normal',8,[160,130,80]);doc.text('FAMILY WISDOM REPORT',PW/2,36,{align:'center',charSpace:2});
-  y=52;
-  sf('bold',16,[240,200,80]);doc.text(a.name,ML,y);y+=7;
-  sf('normal',10,[200,160,80]);doc.text(`${a.relation}  •  ${fmtY(a.birthYear,a.deathYear)}  •  ${a.status==='living'?'Living':'Departed'}`,ML,y);y+=8;
-  ln(ML,y,PW-ML,y);y+=6;
-  if(a.description){sf('italic',10,[220,190,130]);wr(`"${a.description}"`,ML,UW,6);y+=4;ln(ML,y,PW-ML,y,[60,40,15],0.2);y+=6;}
-  showPdfPg('Generating Report…','Writing entries…',55);await sl(80);
   const en=a.wisdomEntries||[];
-  if(en.length){sf('bold',12,[240,168,24]);doc.text(`Wisdom & Memories  (${en.length})`,ML,y);y+=7;
-    en.forEach((w,i)=>{chk(20);sf('bold',9,[240,168,24]);doc.text(`${String(i+1).padStart(2,'0')}  ${tIcon(w.type)} ${w.type.toUpperCase()}`,ML,y);sf('italic',8,[160,130,80]);doc.text(new Date(w.timestamp).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'}),PW-ML,y,{align:'right'});y+=5;ln(ML,y,PW-ML,y,[60,40,15],0.2);y+=5;if(w.text){sf('normal',10,[250,240,220]);wr(w.text,ML,UW,5.5);}y+=5;if(i<en.length-1){ln(ML,y,PW-ML,y,[40,25,8],0.15);y+=3;}});}
-  const tp=doc.getNumberOfPages();for(let p=1;p<=tp;p++){doc.setPage(p);ln(ML,287,PW-ML,287,[80,60,20],0.3);sf('normal',7,[120,90,40]);doc.text(`AncestralMind — Designed by Kandregula Krishnamurthy`,ML,292);doc.text(`Page ${p} of ${tp}`,PW-ML,292,{align:'right'});}
-  showPdfPg('Done!','Downloading…',100);await sl(400);
-  doc.save(`${a.name.replace(/\s+/g,'_')}_AncestralMind.pdf`);
-  hidePdfPg();showToast(`📄 PDF saved`,'success');
+  const lv=a.status==='living';
+  const date=new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+  const win=window.open('','_blank');
+  if(!win){showToast('Please allow popups to export','error');return;}
+  const avHtml=a.photo
+    ?'<img src="'+a.photo+'" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid '+(lv?'#2e7d32':'#b08020')+'">'
+    :'<div style="width:80px;height:80px;border-radius:50%;background:'+(lv?'#d4edda':'#fef3cd')+';border:3px solid '+(lv?'#2e7d32':'#b08020')+';display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:bold;color:'+(lv?'#2e7d32':'#b08020')+';font-family:Georgia,serif">'+ini(a.name)+'</div>';
+  let entriesHtml='';
+  if(!en.length){entriesHtml='<p style="color:#7a5a2a;font-style:italic">No wisdom entries recorded yet.</p>';}
+  else{en.forEach(function(w,i){
+    entriesHtml+='<div style="margin-bottom:20px;padding-bottom:18px;border-bottom:1px solid #ddd">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+      +'<span style="font-family:monospace;font-size:11px;color:#8a5e00;letter-spacing:1px;font-weight:bold">'+String(i+1).padStart(2,'0')+'  '+tIcon(w.type)+' '+w.type.toUpperCase()+'</span>'
+      +'<span style="font-size:11px;color:#9a7820;font-style:italic">'+new Date(w.timestamp).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})+'</span>'
+      +'</div>'
+      +(w.image?'<img src="'+w.image+'" style="width:100%;max-height:200px;object-fit:cover;border-radius:8px;margin-bottom:10px">':'')
+      +(w.text?'<p style="font-size:14px;line-height:1.9;color:#2c1800;font-style:italic;margin:0">'+w.text.replace(/\n/g,'<br>')+'</p>':'')
+      +'</div>';
+  });}
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+a.name+' — Family Tree</title>'
+    +'<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#fdf8f0;font-family:Georgia,serif;padding:24px;max-width:680px;margin:0 auto;color:#2c1800}'
+    +'@media print{body{background:#fdf8f0!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}.no-print{display:none!important}}'
+    +'</style></head><body>'
+    +'<div class="no-print" style="background:#2c1800;border-radius:10px;padding:12px 18px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:center">'
+    +'<span style="color:#ffd040;font-size:13px;font-weight:bold;font-family:Georgia,serif">Family Tree — Wisdom Report</span>'
+    +'<button onclick="window.print()" style="background:linear-gradient(135deg,#f0a818,#8a5e00);border:none;border-radius:8px;color:#fff;font-weight:bold;padding:8px 20px;cursor:pointer;font-size:13px">🖨️ Print / Save PDF</button>'
+    +'</div>'
+    +'<div style="background:'+(lv?'#f0fff4':'#fffbf0')+';border:2.5px solid '+(lv?'#2e7d32':'#b08020')+';border-radius:16px;padding:22px;margin-bottom:24px">'
+    +'<div style="display:flex;align-items:center;gap:18px;margin-bottom:14px">'+avHtml
+    +'<div><div style="font-size:22px;color:#8a5e00;font-weight:bold;margin-bottom:4px">'+a.name+'</div>'
+    +'<div style="font-size:12px;color:'+(lv?'#2e7d32':'#b08020')+';letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">'+a.relation+'</div>'
+    +'<div style="font-size:12px;color:#7a5a2a;font-style:italic">'+fmtY(a.birthYear,a.deathYear)+'&nbsp;&nbsp;'+(lv?'🌱 Living':'⚰ Departed')+'</div>'
+    +'</div></div>'
+    +(a.description?'<div style="font-style:italic;color:#5a3a10;font-size:14px;line-height:1.8;border-top:1px solid #ddd;padding-top:12px">"'+a.description+'"</div>':'')
+    +'</div>'
+    +'<div style="font-family:monospace;font-size:12px;color:#8a5e00;letter-spacing:2px;margin-bottom:16px;font-weight:bold">WISDOM &amp; MEMORIES  ('+en.length+')</div>'
+    +entriesHtml
+    +'<div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1.5px solid #c9952a;font-family:monospace;font-size:10px;color:#9a7820;letter-spacing:1px">FAMILY TREE APP  •  DESIGNED BY KANDREGULA KRISHNAMURTHY  •  '+date+'</div>'
+    +'</body></html>');
+  win.document.close();
+  showToast('Report ready — tap Print / Save PDF','success');
 }
-function showPdfPg(t,s,p){document.getElementById('pdfOvT').textContent=t;document.getElementById('pdfOvS').textContent=s;document.getElementById('pdfBarF').style.width=p+'%';document.getElementById('pdfOv').classList.add('show');}
-function hidePdfPg(){document.getElementById('pdfOv').classList.remove('show');}
+function showPdfPg(t,s,p){}
+function hidePdfPg(){}
 
 // ── SAMPLE DATA & TOUR ──
 let tourDemoLoaded=false;
