@@ -609,23 +609,50 @@ function renderTree(){
   try{
   const gens={};S.ancestors.forEach(a=>{const g=a.generation||4;if(!gens[g])gens[g]=[];gens[g].push(a);});
   const gk=Object.keys(gens).map(Number).sort((a,b)=>a-b);
-  const NW=120,NH=108,HG=14,VG=60,PX=40,PY=30;
+  const NW=120,NH=108,HG=18,VG=64,PX=30,PY=30;
 
-  // Sort each generation row so spouses are always adjacent
-  gk.forEach(function(g){
+  // ── Smart sort: group by parent position, then spouse adjacent ──
+  gk.forEach(function(g,gi){
     const row=gens[g];
-    const placed={};
-    const sorted=[];
-    row.forEach(function(a){
-      if(placed[a.id])return;
-      placed[a.id]=true;
-      sorted.push(a);
-      // Immediately place spouse next if they're in the same generation
-      if(a.spouseId&&!placed[a.spouseId]){
-        const spouse=row.find(function(x){return x.id===a.spouseId;});
-        if(spouse){placed[spouse.id]=true;sorted.push(spouse);}
+    if(!row||row.length<=1)return;
+    // Build parent position lookup from previous generation
+    const prevGen=gi>0?gens[gk[gi-1]]:null;
+    const parentOrd={};
+    if(prevGen){prevGen.forEach(function(p,i){parentOrd[p.id]=i;});}
+    // Score each member by their parent's position (for sorting)
+    function parentScore(a){
+      const pid=a.fatherId||a.motherId||a.parentId||null;
+      if(pid&&parentOrd[pid]!==undefined)return parentOrd[pid];
+      // If spouse has a parent score, use that
+      if(a.spouseId){
+        const sp=row.find(function(x){return x.id===a.spouseId;});
+        if(sp){const spid=sp.fatherId||sp.motherId||sp.parentId||null;if(spid&&parentOrd[spid]!==undefined)return parentOrd[spid]+0.5;}
       }
+      return 999;
+    }
+    // Group members by their parent score bucket
+    const buckets={};
+    row.forEach(function(a){
+      const sc=Math.floor(parentScore(a));
+      if(!buckets[sc])buckets[sc]=[];
+      buckets[sc].push(a);
     });
+    // Within each bucket sort spouses adjacent
+    const sorted=[];
+    const placed={};
+    Object.keys(buckets).map(Number).sort(function(a,b){return a-b;}).forEach(function(sc){
+      const grp=buckets[sc];
+      grp.forEach(function(a){
+        if(placed[a.id])return;
+        placed[a.id]=true;sorted.push(a);
+        if(a.spouseId&&!placed[a.spouseId]){
+          const sp=row.find(function(x){return x.id===a.spouseId;});
+          if(sp){placed[sp.id]=true;sorted.push(sp);}
+        }
+      });
+    });
+    // Add any remaining (no parent link)
+    row.forEach(function(a){if(!placed[a.id]){placed[a.id]=true;sorted.push(a);}});
     gens[g]=sorted;
   });
 
@@ -1058,199 +1085,190 @@ function tIcon(t){return{Story:'📖','Life Lesson':'💡',Letter:'✉️',Sayin
 // ── PRINT FAMILY TREE ────────────────────────────────────
 function printFamilyTree(){
   if(!S.ancestors.length){showToast('No family members to print','error');return;}
-  showToast('Building premium print…','success');
-  setTimeout(function(){
+  showToast('Building print…','success');
+  // For large families use compact list, for small use visual tree
+  if(S.ancestors.length>28){
+    setTimeout(printCompactFamily,150);
+  }else{
+    setTimeout(printVisualTree,150);
+  }
+}
 
-    // ── LAYOUT ──
+// ── COMPACT FAMILY LIST (for large families) ──
+function printCompactFamily(){
+  const selfP=S.ancestors.find(function(a){return a.relation&&a.relation.toLowerCase().includes('self');});
+  const titleName=selfP?selfP.name+"'s Family":"Our Family";
+  const date=new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+
+  // Group by generation
+  const gens={};
+  S.ancestors.forEach(function(a){const g=a.generation||4;if(!gens[g])gens[g]=[];gens[g].push(a);});
+  const gk=Object.keys(gens).map(Number).sort(function(a,b){return a-b;});
+  const genNames={1:'Great-Grandparents',2:'Grandparents',3:'Parents',4:'Our Generation',5:'Children',6:'Grandchildren',7:'Great-Grandchildren'};
+
+  function avHtml(a){
+    const lv=a.status==='living',rc=lv?'#2e7d32':'#b08020',bg=lv?'#d4edda':'#fef3cd';
+    return a.photo
+      ?'<img src="'+a.photo+'" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid '+rc+';flex-shrink:0">'
+      :'<div style="width:48px;height:48px;border-radius:50%;background:'+bg+';border:2px solid '+rc+';display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:16px;color:'+rc+';font-family:Georgia,serif;flex-shrink:0">'+ini(a.name)+'</div>';
+  }
+
+  let body='';
+  gk.forEach(function(g){
+    const row=gens[g];
+    body+='<div style="margin-bottom:24px">'
+      +'<div style="font-family:monospace;font-size:11px;color:#8a5e00;letter-spacing:2px;font-weight:bold;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #c9952a;display:flex;align-items:center;gap:10px">'
+      +'<span style="background:#c9952a;color:#fff8ee;padding:2px 10px;border-radius:12px">GEN '+g+'</span>'
+      +(genNames[g]?'<span>'+genNames[g].toUpperCase()+'</span>':'')
+      +'<span style="color:#b08020">'+row.length+' member'+(row.length>1?'s':'')+'</span>'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px">';
+    row.forEach(function(a){
+      const lv=a.status==='living',rc=lv?'#2e7d32':'#b08020',bc=lv?'#f0fff4':'#fffbf0';
+      // Find parent names
+      const father=a.fatherId?S.ancestors.find(function(x){return x.id===a.fatherId;}):null;
+      const mother=a.motherId?S.ancestors.find(function(x){return x.id===a.motherId;}):null;
+      const spouse=a.spouseId?S.ancestors.find(function(x){return x.id===a.spouseId;}):null;
+      let links='';
+      if(father)links+='<span style="font-size:10px;color:#7a5a2a">👨 '+father.name.split(' ')[0]+'</span> ';
+      if(mother)links+='<span style="font-size:10px;color:#7a5a2a">👩 '+mother.name.split(' ')[0]+'</span> ';
+      if(spouse)links+='<span style="font-size:10px;color:'+rc+'">'+'♥'+' '+spouse.name.split(' ')[0]+'</span>';
+      body+='<div style="background:'+bc+';border:1.5px solid '+rc+';border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:12px">'
+        +avHtml(a)
+        +'<div style="min-width:0">'
+        +'<div style="font-family:Georgia,serif;font-size:12px;font-weight:bold;color:#2c1800;margin-bottom:2px;line-height:1.3">'+a.name+'</div>'
+        +'<div style="font-family:monospace;font-size:9px;color:'+rc+';letter-spacing:0.5px;text-transform:uppercase;margin-bottom:2px">'+a.relation+'</div>'
+        +(fmtY(a.birthYear,a.deathYear)?'<div style="font-size:10px;color:#7a5a2a;font-style:italic">'+fmtY(a.birthYear,a.deathYear)+'</div>':'')
+        +(links?'<div style="margin-top:4px">'+links+'</div>':'')
+        +'</div></div>';
+    });
+    body+='</div></div>';
+  });
+
+  const win=window.open('','_blank');
+  if(!win){showToast('Please allow popups to print','error');return;}
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+titleName+'</title>'
+    +'<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#fdf8f0;font-family:Georgia,serif;padding:0;color:#2c1800}'
+    +'@media print{body{background:#fdf8f0!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}.no-print{display:none!important}'
+    +'div[style*="background:#f0fff4"],div[style*="background:#fffbf0"]{-webkit-print-color-adjust:exact!important}}'
+    +'</style></head><body>'
+    +'<div class="no-print" style="background:#2c1800;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;gap:10px;position:sticky;top:0;z-index:10">'
+    +'<button onclick="window.close()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:8px;color:#ffd040;padding:8px 14px;cursor:pointer;font-size:13px;font-family:Georgia,serif">&#8592; Back</button>'
+    +'<div style="color:#ffd040;font-size:13px;font-weight:bold;font-family:Georgia,serif;flex:1;text-align:center">'+titleName+'</div>'
+    +'<button onclick="window.print()" style="background:linear-gradient(135deg,#f0a818,#8a5e00);border:none;border-radius:8px;color:#fff;font-weight:bold;padding:8px 20px;cursor:pointer;font-size:13px">&#x1F5A8;&#xFE0F; Print / Save PDF</button>'
+    +'</div>'
+    +'<div style="padding:20px 20px 10px;text-align:center;border-bottom:2px solid #c9952a;margin-bottom:20px">'
+    +'<div style="font-size:26px;font-weight:bold;color:#8a5e00;font-family:Georgia,serif;margin-bottom:4px">'+titleName+'</div>'
+    +'<div style="font-size:12px;color:#9a7820">'+S.ancestors.length+' members &nbsp;•&nbsp; '+date+'</div>'
+    +'</div>'
+    +'<div style="padding:0 20px 30px">'+body+'</div>'
+    +'<div style="text-align:center;padding:14px;border-top:1.5px solid #c9952a;font-family:monospace;font-size:10px;color:#9a7820;letter-spacing:1px">FAMILY TREE APP  •  DESIGNED BY KANDREGULA KRISHNAMURTHY</div>'
+    +'</body></html>');
+  win.document.close();
+  showToast('Family report ready — tap Print / Save PDF','success');
+}
+
+// ── VISUAL TREE PRINT (for ≤28 members) ──
+function printVisualTree(){
     const gens={};
     S.ancestors.forEach(function(a){const g=a.generation||4;if(!gens[g])gens[g]=[];gens[g].push(a);});
     const gk=Object.keys(gens).map(Number).sort(function(a,b){return a-b;});
     const NW=140,NH=130,HG=20,VG=70,PX=50,PY=20;
 
     // Sort each generation so spouses are adjacent
-    gk.forEach(function(g){
-      const row=gens[g],placed={},sorted=[];
-      row.forEach(function(a){
-        if(placed[a.id])return;placed[a.id]=true;sorted.push(a);
-        if(a.spouseId&&!placed[a.spouseId]){
-          const sp=row.find(function(x){return x.id===a.spouseId;});
-          if(sp){placed[sp.id]=true;sorted.push(sp);}
-        }
+    gk.forEach(function(g,gi){
+      const row=gens[g],prevGen=gi>0?gens[gk[gi-1]]:null;
+      const parentOrd={};if(prevGen)prevGen.forEach(function(p,i){parentOrd[p.id]=i;});
+      function pScore(a){const pid=a.fatherId||a.motherId||a.parentId||null;return pid&&parentOrd[pid]!==undefined?parentOrd[pid]:999;}
+      const buckets={};row.forEach(function(a){const sc=Math.floor(pScore(a));if(!buckets[sc])buckets[sc]=[];buckets[sc].push(a);});
+      const sorted=[],placed={};
+      Object.keys(buckets).map(Number).sort(function(a,b){return a-b;}).forEach(function(sc){
+        buckets[sc].forEach(function(a){
+          if(placed[a.id])return;placed[a.id]=true;sorted.push(a);
+          if(a.spouseId&&!placed[a.spouseId]){const sp=row.find(function(x){return x.id===a.spouseId;});if(sp){placed[sp.id]=true;sorted.push(sp);}}
+        });
       });
+      row.forEach(function(a){if(!placed[a.id]){placed[a.id]=true;sorted.push(a);}});
       gens[g]=sorted;
     });
 
     const mx=Math.max.apply(null,gk.map(function(g){return gens[g].length;}));
     const TW=Math.max(mx*(NW+HG)-HG+PX*2, 500);
     const TH=gk.length*(NH+VG)-VG+PY+60;
-
     const pos={};
     gk.forEach(function(g,gi){
       const row=gens[g],rw=row.length*(NW+HG)-HG,sx=(TW-rw)/2,y=PY+gi*(NH+VG);
       row.forEach(function(a,idx){const x=sx+idx*(NW+HG);pos[a.id]={x:x,y:y,cx:x+NW/2};});
     });
 
-    // ── CONNECTOR LINES (SVG) ──
     let svgLines='';
+    // Spouse connectors
+    try{const ds={};S.ancestors.forEach(function(a){if(!a.spouseId||!pos[a.id]||!pos[a.spouseId])return;const k=a.id+'_'+a.spouseId,k2=a.spouseId+'_'+a.id;if(ds[k]||ds[k2])return;ds[k]=true;const pa=pos[a.id],pb=pos[a.spouseId],x1=Math.min(pa.cx,pb.cx)+NW/2,x2=Math.max(pa.cx,pb.cx)-NW/2,y=Math.min(pa.y,pb.y)+NH/2,mx2=(pa.cx+pb.cx)/2;svgLines+='<line x1="'+x1+'" y1="'+y+'" x2="'+x2+'" y2="'+y+'" stroke="#b08020" stroke-width="2" stroke-dasharray="5,3"/><circle cx="'+mx2+'" cy="'+y+'" r="6" fill="#fffbf0" stroke="#b08020" stroke-width="1.5"/><text x="'+mx2+'" y="'+(y+4)+'" font-size="9" text-anchor="middle" fill="#b08020">♥</text>';});}catch(e){}
+    // Parent connectors
     S.ancestors.forEach(function(a){
       if(!pos[a.id])return;
-      const lv=a.status==='living';
-      const col=lv?'#2e7d32':'#b08020';
-      const dsh=lv?'':'stroke-dasharray="6,3"';
-      const cp=pos[a.id];
-      const hasFather=a.fatherId&&pos[a.fatherId];
-      const hasMother=a.motherId&&pos[a.motherId];
+      const lv=a.status==='living',col=lv?'#2e7d32':'#b08020',dsh=lv?'':'stroke-dasharray="6,3"',cp=pos[a.id];
+      const hasFather=a.fatherId&&pos[a.fatherId],hasMother=a.motherId&&pos[a.motherId];
       if(hasFather&&hasMother){
-        const pf=pos[a.fatherId],pm=pos[a.motherId];
-        const midX=(pf.cx+pm.cx)/2;
-        const midY=Math.min(pf.y+NH,pm.y+NH)+(VG*0.38);
+        const pf=pos[a.fatherId],pm=pos[a.motherId],midX=(pf.cx+pm.cx)/2,midY=Math.min(pf.y+NH,pm.y+NH)+(VG*0.38);
         svgLines+='<path d="M'+pf.cx+','+(pf.y+NH)+' Q'+pf.cx+','+midY+' '+midX+','+midY+'" stroke="'+col+'" stroke-width="2.5" fill="none" '+dsh+'/>';
         svgLines+='<path d="M'+pm.cx+','+(pm.y+NH)+' Q'+pm.cx+','+midY+' '+midX+','+midY+'" stroke="'+col+'" stroke-width="2.5" fill="none" '+dsh+'/>';
         svgLines+='<path d="M'+midX+','+midY+' Q'+midX+','+(midY+(cp.y-midY)*0.55)+' '+cp.cx+','+cp.y+'" stroke="'+col+'" stroke-width="3" fill="none" '+dsh+'/>';
         svgLines+='<circle cx="'+midX+'" cy="'+midY+'" r="4" fill="'+col+'"/>';
-      }else{
-        const pid=hasFather?a.fatherId:hasMother?a.motherId:a.parentId;
-        if(!pid||!pos[pid])return;
-        const pp=pos[pid];
-        const x1=pp.cx,y1=pp.y+NH,x2=cp.cx,y2=cp.y;
-        svgLines+='<path d="M'+x1+','+y1+' C'+x1+','+(y1+(y2-y1)*0.4)+' '+x2+','+(y2-(y2-y1)*0.4)+' '+x2+','+y2+'" stroke="'+col+'" stroke-width="2.5" fill="none" '+dsh+'/>';
-      }
+      }else{const pid=hasFather?a.fatherId:hasMother?a.motherId:a.parentId;if(!pid||!pos[pid])return;const pp=pos[pid],x1=pp.cx,y1=pp.y+NH,x2=cp.cx,y2=cp.y;svgLines+='<path d="M'+x1+','+y1+' C'+x1+','+(y1+(y2-y1)*0.4)+' '+x2+','+(y2-(y2-y1)*0.4)+' '+x2+','+y2+'" stroke="'+col+'" stroke-width="2.5" fill="none" '+dsh+'/>';}
     });
 
-    // ── GEN LABELS ──
-    // Spouse connectors in print
-    try{
-      const drawnSp={};
-      S.ancestors.forEach(function(a){
-        if(!a.spouseId||!pos[a.id]||!pos[a.spouseId])return;
-        const k1=a.id+'_'+a.spouseId,k2=a.spouseId+'_'+a.id;
-        if(drawnSp[k1]||drawnSp[k2])return;drawnSp[k1]=true;
-        const pa=pos[a.id],pb=pos[a.spouseId];
-        const x1=Math.min(pa.cx,pb.cx)+NW/2,x2=Math.max(pa.cx,pb.cx)-NW/2;
-        const y=Math.min(pa.y,pb.y)+NH/2;
-        const mx2=(pa.cx+pb.cx)/2;
-        svgLines+='<line x1="'+x1+'" y1="'+y+'" x2="'+x2+'" y2="'+y+'" stroke="#b08020" stroke-width="2" stroke-dasharray="5,3"/>';
-        svgLines+='<circle cx="'+mx2+'" cy="'+y+'" r="6" fill="#fffbf0" stroke="#b08020" stroke-width="1.5"/>';
-        svgLines+='<text x="'+mx2+'" y="'+(y+4)+'" font-size="9" text-anchor="middle" fill="#b08020">\u2665</text>';
-      });
-    }catch(e){}
+    const svgLabels=gk.map(function(g,gi){const lbl={1:'Gen 1',2:'Gen 2',3:'Gen 3',4:'Gen 4',5:'Gen 5',6:'Gen 6'}[g]||('Gen '+g),midY=PY+gi*(NH+VG)+NH/2;return '<text x="16" y="'+midY+'" transform="rotate(-90 16 '+midY+')" font-size="12" fill="#9a7820" font-family="Georgia,serif" font-weight="bold" text-anchor="middle">'+lbl+'</text>';}).join('');
 
-    const svgLabels=gk.map(function(g,gi){
-      const lbl={1:'Gen 1',2:'Gen 2',3:'Gen 3',4:'Gen 4',5:'Gen 5',6:'Gen 6'}[g]||('Gen '+g);
-      const midY=PY+gi*(NH+VG)+NH/2;
-      return '<text x="16" y="'+midY+'" transform="rotate(-90 16 '+midY+')" font-size="12" fill="#9a7820" font-family="Georgia,serif" font-weight="bold" text-anchor="middle">'+lbl+'</text>';
-    }).join('');
-
-    // ── NODE HTML ──
     const nodeHtml=S.ancestors.map(function(a){
       if(!pos[a.id])return '';
-      const p=pos[a.id],lv=a.status==='living';
-      const ringCol=lv?'#2e7d32':'#b08020';
-      const bgCol=lv?'#f0fff4':'#fffbf0';
-      const av=a.photo
-        ?'<img src="'+a.photo+'" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:3px solid '+ringCol+';display:block;margin:0 auto">'
-        :'<div style="width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:20px;background:'+(lv?'#d4edda':'#fef3cd')+';border:3px solid '+ringCol+';color:'+ringCol+';margin:0 auto;font-family:Georgia,serif">'+ini(a.name)+'</div>';
-      const nm=a.name;
-      const nmSize=nm.length>20?'10px':nm.length>14?'11px':'12px';
-      const rl=a.relation.replace(/ \(.*?\)/,'');
-      const yr=fmtY(a.birthYear,a.deathYear);
-      const statusDot='<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:'+ringCol+';margin-right:4px;vertical-align:middle"></span>';
-      return '<div style="position:absolute;left:'+p.x+'px;top:'+p.y+'px;width:'+NW+'px;min-height:'+NH+'px;'
-        +'background:'+bgCol+';border:2.5px solid '+ringCol+';border-radius:16px;'
-        +'text-align:center;padding:12px 10px;box-sizing:border-box;'
-        +'box-shadow:0 2px 12px rgba(0,0,0,0.12)">'
+      const p=pos[a.id],lv=a.status==='living',rc=lv?'#2e7d32':'#b08020',bc=lv?'#f0fff4':'#fffbf0';
+      const av=a.photo?'<img src="'+a.photo+'" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:3px solid '+rc+';display:block;margin:0 auto">':'<div style="width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:20px;background:'+(lv?'#d4edda':'#fef3cd')+';border:3px solid '+rc+';color:'+rc+';margin:0 auto;font-family:Georgia,serif">'+ini(a.name)+'</div>';
+      const nm=a.name,nmSize=nm.length>20?'10px':nm.length>14?'11px':'12px',rl=a.relation.replace(/ \(.*?\)/,''),yr=fmtY(a.birthYear,a.deathYear);
+      return '<div style="position:absolute;left:'+p.x+'px;top:'+p.y+'px;width:'+NW+'px;min-height:'+NH+'px;background:'+bc+';border:2.5px solid '+rc+';border-radius:16px;text-align:center;padding:12px 10px;box-sizing:border-box;box-shadow:0 2px 12px rgba(0,0,0,0.12)">'
         +'<div style="margin-bottom:9px">'+av+'</div>'
         +'<div style="font-family:Georgia,serif;font-size:'+nmSize+';font-weight:700;color:#2c1800;line-height:1.4;margin-bottom:4px">'+nm+'</div>'
-        +'<div style="font-family:monospace;font-size:9px;color:'+ringCol+';letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;font-weight:600">'+rl+'</div>'
+        +'<div style="font-family:monospace;font-size:9px;color:'+rc+';letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;font-weight:600">'+rl+'</div>'
         +(yr?'<div style="font-size:9px;color:#6b4c1e;font-style:italic;margin-bottom:3px">'+yr+'</div>':'')
-        +'<div style="font-size:9px;color:'+ringCol+';font-weight:600">'+statusDot+(lv?'Living':'Departed')+'</div>'
+        +'<div style="font-size:9px;color:'+rc+';font-weight:600"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:'+rc+';margin-right:4px;vertical-align:middle"></span>'+(lv?'Living':'Departed')+'</div>'
         +'</div>';
     }).join('');
 
-    const selfPerson=S.ancestors.find(function(a){return a.relation&&a.relation.toLowerCase().includes('self');});
-    const titlePerson=selfPerson||S.ancestors[0];
-    const selfName=titlePerson&&titlePerson.name?titlePerson.name:'';
-    const fam=selfName?selfName+"'s Family":'Our Family';
-    const famLast=selfName?selfName:"Family";
+    const selfP=S.ancestors.find(function(a){return a.relation&&a.relation.toLowerCase().includes('self');});
+    const fam=(selfP&&selfP.name)?selfP.name+"'s Family":(S.ancestors[0]&&S.ancestors[0].name?S.ancestors[0].name.split(' ').slice(-1)[0]+' Family':'Family');
     const date=new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
 
     const win=window.open('','_blank');
     if(!win){showToast('Please allow popups to print','error');return;}
-
-    win.document.write('<!DOCTYPE html><html><head>'
-      +'<meta charset="UTF-8">'
-      +'<title>'+fam+'</title>'
-      +'<style>'
-      +'*{margin:0;padding:0;box-sizing:border-box}'
-      +'html,body{background:#fdf8f0;font-family:Georgia,serif}'
-      +'@page{size:A4 portrait;margin:14mm 12mm 14mm 12mm}'
-      +'@media print{'
-      +'  .no-print{display:none!important}'
-      +'  body{background:#fdf8f0!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}'
-      +'  .tree-scale{transform-origin:top center}'
-      +'}'
-      +'</style>'
-      +'</head><body style="padding:0;background:#fdf8f0">'
-
-      // ── PRINT BUTTON BAR ──
-      +'<div class="no-print" style="background:#2c1800;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10;gap:10px">'
-      +'<button onclick="window.close()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:8px;color:#ffd040;padding:8px 14px;cursor:pointer;font-size:13px;font-family:Georgia,serif;white-space:nowrap">← Back</button>'
-      +'<div style="color:#ffd040;font-size:13px;font-weight:bold;font-family:Georgia,serif;flex:1;text-align:center">'+fam+' &nbsp;·&nbsp; <span style="font-size:11px;color:#c9952a">'+S.ancestors.length+' members</span></div>'
-      +'<button onclick="window.print()" style="background:linear-gradient(135deg,#f0a818,#8a5e00);border:none;border-radius:8px;color:#fff;font-weight:bold;padding:10px 20px;cursor:pointer;font-size:13px;font-family:Georgia,serif;white-space:nowrap">🖨️ Print / Save PDF</button>'
+    win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+fam+'</title>'
+      +'<style>*{margin:0;padding:0;box-sizing:border-box}html,body{background:#fdf8f0;font-family:Georgia,serif}'
+      +'@page{size:A4 landscape;margin:10mm}'
+      +'@media print{body{background:#fdf8f0!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}.no-print{display:none!important}}'
+      +'</style></head><body style="padding:0;background:#fdf8f0">'
+      +'<div class="no-print" style="background:#2c1800;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;gap:10px;position:sticky;top:0;z-index:10">'
+      +'<button onclick="window.close()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:8px;color:#ffd040;padding:8px 14px;cursor:pointer;font-size:13px;font-family:Georgia,serif">&#8592; Back</button>'
+      +'<div style="color:#ffd040;font-size:13px;font-weight:bold;font-family:Georgia,serif;flex:1;text-align:center">'+fam+' &nbsp;&#183;&nbsp; <span style="font-size:11px;color:#c9952a">'+S.ancestors.length+' members</span></div>'
+      +'<button onclick="window.print()" style="background:linear-gradient(135deg,#f0a818,#8a5e00);border:none;border-radius:8px;color:#fff;font-weight:bold;padding:8px 20px;cursor:pointer;font-size:13px">&#x1F5A8;&#xFE0F; Print / Save PDF</button>'
       +'</div>'
-
-      // ── COVER HEADER ──
-      +'<div style="text-align:center;padding:22px 20px 16px;border-bottom:2px solid #c9952a;margin-bottom:20px;background:#fdf8f0">'
-      +'<div style="font-size:28px;font-weight:bold;color:#8a5e00;font-family:Georgia,serif;letter-spacing:0.5px;margin-bottom:6px">'+fam+'</div>'
-      +'<div style="display:flex;justify-content:center;align-items:center;gap:6px;margin-bottom:6px">'
-      +'<span style="height:1px;width:40px;background:#c9952a;display:inline-block"></span>'
-      +'<span style="font-size:18px">🌳</span>'
-      +'<span style="height:1px;width:40px;background:#c9952a;display:inline-block"></span>'
+      +'<div style="text-align:center;padding:16px 20px 12px;border-bottom:2px solid #c9952a">'
+      +'<div style="font-size:28px;font-weight:bold;color:#8a5e00;font-family:Georgia,serif;margin-bottom:4px">'+fam+'</div>'
+      +'<div style="font-size:12px;color:#9a7820">'+S.ancestors.length+' members &nbsp;&#183;&nbsp; '+date+'</div>'
       +'</div>'
-      +'<div style="font-size:13px;color:#7a5a2a;letter-spacing:0.5px">'+S.ancestors.length+' members &nbsp;•&nbsp; '+date+'</div>'
+      +'<div style="display:flex;justify-content:center;gap:24px;padding:10px;border-bottom:1px solid #e0c880;font-size:11px;color:#5a3a10">'
+      +'<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#2e7d32;vertical-align:middle;margin-right:4px"></span>Living</span>'
+      +'<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#b08020;vertical-align:middle;margin-right:4px"></span>Departed</span>'
+      +'<span><span style="display:inline-block;width:24px;height:2px;background:#b08020;border-top:2px dashed #b08020;vertical-align:middle;margin-right:4px"></span>Departed line</span>'
+      +'<span>♥ Spouse</span>'
       +'</div>'
-
-      // ── LEGEND ──
-      +'<div style="display:flex;justify-content:center;gap:28px;margin-bottom:18px;font-size:12px;color:#5a3a10;font-family:Georgia,serif">'
-      +'<span><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#2e7d32;vertical-align:middle;margin-right:5px"></span>Living</span>'
-      +'<span><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#b08020;vertical-align:middle;margin-right:5px"></span>Departed</span>'
-      +'<span><span style="display:inline-block;width:28px;height:2px;background:#2e7d32;vertical-align:middle;margin-right:5px"></span>Direct line</span>'
-      +'<span><span style="display:inline-block;width:28px;height:2px;background:#b08020;border-top:2px dashed #b08020;vertical-align:middle;margin-right:5px"></span>Departed line</span>'
-      +'</div>'
-
-      // ── TREE (auto-scaled to fit A4 width) ──
-      +'<div style="overflow:hidden">'
-      +'<div class="tree-scale" id="treeWrap" style="position:relative;width:'+TW+'px;height:'+TH+'px;margin:0 auto">'
+      +'<div style="overflow:auto;padding:16px">'
+      +'<div id="treeWrap" style="position:relative;width:'+TW+'px;height:'+TH+'px;margin:0 auto">'
       +'<svg style="position:absolute;top:0;left:0;width:'+TW+'px;height:'+TH+'px;overflow:visible;pointer-events:none">'+svgLabels+svgLines+'</svg>'
-      +nodeHtml
-      +'</div>'
-      +'</div>'
-
-      // ── FOOTER ──
-      +'<div style="text-align:center;margin-top:24px;padding:12px 0;border-top:1.5px solid #c9952a">'
-      +'<div style="font-family:monospace;font-size:10px;color:#9a7820;letter-spacing:2px">FAMILY TREE APP &nbsp;•&nbsp; DESIGNED BY KANDREGULA KRISHNAMURTHY</div>'
-      +'</div>'
-
-      // ── AUTO-SCALE SCRIPT ──
-      +'<script>'
-      +'window.onload=function(){'
-      +'  var wrap=document.getElementById("treeWrap");'
-      +'  if(!wrap)return;'
-      +'  var pw=document.body.clientWidth-40;'
-      +'  var tw='+TW+';'
-      +'  if(tw>pw){'
-      +'    var sc=pw/tw;'
-      +'    wrap.style.transform="scale("+sc+")";'
-      +'    wrap.style.transformOrigin="top center";'
-      +'    wrap.parentElement.style.height=Math.ceil('+TH+'*sc+20)+"px";'
-      +'  }'
-      +'};'
-      +'<\/script>'
+      +nodeHtml+'</div></div>'
+      +'<div style="text-align:center;padding:12px;border-top:1.5px solid #c9952a;font-family:monospace;font-size:10px;color:#9a7820;letter-spacing:1px">FAMILY TREE APP  &bull;  DESIGNED BY KANDREGULA KRISHNAMURTHY</div>'
+      +'<script>window.onload=function(){var w=document.getElementById("treeWrap");if(!w)return;var pw=document.body.clientWidth-40;if('+TW+'>pw){var sc=pw/'+TW+';w.style.transform="scale("+sc+")";w.style.transformOrigin="top center";w.parentElement.style.height=Math.ceil('+TH+'*sc+20)+"px";}}<\/script>'
       +'</body></html>');
-
     win.document.close();
     showToast('Tree ready — tap Print / Save PDF','success');
-  },150);
 }
 // ── END PRINT FAMILY TREE ────────────────────────────────
 function injectPWA(){
