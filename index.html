@@ -844,7 +844,7 @@ function exportPDF(aId){
       +(w.text?'<p style="font-size:14px;line-height:1.9;color:#2c1800;font-style:italic;margin:0">'+w.text.replace(/\n/g,'<br>')+'</p>':'')
       +'</div>';
   });}
-  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+a.name+' — Family Tree</title>'
+  const _html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+a.name+' — Family Tree</title>'
     +'<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#fdf8f0;font-family:Georgia,serif;padding:24px;max-width:680px;margin:0 auto;color:#2c1800}'
     +'@media print{body{background:#fdf8f0!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}.no-print{display:none!important}}'
     +'</style></head><body>'
@@ -864,8 +864,8 @@ function exportPDF(aId){
     +'<div style="font-family:monospace;font-size:12px;color:#8a5e00;letter-spacing:2px;margin-bottom:16px;font-weight:bold">WISDOM &amp; MEMORIES  ('+en.length+')</div>'
     +entriesHtml
     +'<div style="text-align:center;margin-top:28px;padding-top:14px;border-top:1.5px solid #c9952a;font-family:monospace;font-size:10px;color:#9a7820;letter-spacing:1px">FAMILY TREE APP  •  DESIGNED BY KANDREGULA KRISHNAMURTHY  •  '+date+'</div>'
-    +'</body></html>');
-  win.document.close();
+    +'</body></html>';
+  win.location.href=URL.createObjectURL(new Blob([_html],{type:'text/html'}));
   showToast('Report ready — tap Print / Save PDF','success');
 }
 function showPdfPg(t,s,p){}
@@ -1147,7 +1147,7 @@ function printCompactFamily(){
 
   const win=window.open('','_blank');
   if(!win){showToast('Please allow popups to print','error');return;}
-  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+titleName+'</title>'
+  const _html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+titleName+'</title>'
     +'<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#fdf8f0;font-family:Georgia,serif;padding:0;color:#2c1800}'
     +'@media print{body{background:#fdf8f0!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}.no-print{display:none!important}'
     +'div[style*="background:#f0fff4"],div[style*="background:#fffbf0"]{-webkit-print-color-adjust:exact!important}}'
@@ -1163,8 +1163,8 @@ function printCompactFamily(){
     +'</div>'
     +'<div style="padding:0 20px 30px">'+body+'</div>'
     +'<div style="text-align:center;padding:14px;border-top:1.5px solid #c9952a;font-family:monospace;font-size:10px;color:#9a7820;letter-spacing:1px">FAMILY TREE APP  •  DESIGNED BY KANDREGULA KRISHNAMURTHY</div>'
-    +'</body></html>');
-  win.document.close();
+    +'</body></html>';
+  win.location.href=URL.createObjectURL(new Blob([_html],{type:'text/html'}));
   showToast('Family report ready — tap Print / Save PDF','success');
 }
 
@@ -1240,7 +1240,7 @@ function printVisualTree(){
 
     const win=window.open('','_blank');
     if(!win){showToast('Please allow popups to print','error');return;}
-    win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+fam+'</title>'
+    const _html2='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+fam+'</title>'
       +'<style>*{margin:0;padding:0;box-sizing:border-box}html,body{background:#fdf8f0;font-family:Georgia,serif}'
       +'@page{size:A4 landscape;margin:10mm}'
       +'@media print{body{background:#fdf8f0!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}.no-print{display:none!important}}'
@@ -1266,8 +1266,8 @@ function printVisualTree(){
       +nodeHtml+'</div></div>'
       +'<div style="text-align:center;padding:12px;border-top:1.5px solid #c9952a;font-family:monospace;font-size:10px;color:#9a7820;letter-spacing:1px">FAMILY TREE APP  &bull;  DESIGNED BY KANDREGULA KRISHNAMURTHY</div>'
       +'<script>window.onload=function(){var w=document.getElementById("treeWrap");if(!w)return;var pw=document.body.clientWidth-40;if('+TW+'>pw){var sc=pw/'+TW+';w.style.transform="scale("+sc+")";w.style.transformOrigin="top center";w.parentElement.style.height=Math.ceil('+TH+'*sc+20)+"px";}}<\/script>'
-      +'</body></html>');
-    win.document.close();
+      +'</body></html>';
+    win.location.href=URL.createObjectURL(new Blob([_html2],{type:'text/html'}));
     showToast('Tree ready — tap Print / Save PDF','success');
 }
 // ── END PRINT FAMILY TREE ────────────────────────────────
